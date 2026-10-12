@@ -1,0 +1,41 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ZAFIRA TILI - Birinchi dastur 🔷
+//  Fayl: hello.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// O'zgaruvchilar
+let nomi = "Zafira"
+let versiya = 0.1
+const YARATUVCHI = "Jasper & Antigravity"
+
+print("Salom, " + nomi + " tili!")
+print("Versiya: " + String(versiya))
+print("Yaratuvchi: " + YARATUVCHI)
+
+// ─── Funksiya ───
+fn salomlash(ism) {
+    return "Assalomu alaykum, " + ism + "!"
+}
+
+print(salomlash("Jasper"))
+
+// ─── Shartlar ───
+let ball = 87
+
+if ball >= 90 {
+    print("A'lo baho!")
+} else if ball >= 70 {
+    print("Yaxshi baho!")
+} else {
+    print("O'tdi")
+}
+
+// ─── Tsikl ───
+print("Hisoblaymiz:")
+let yigindi = 0
+for i in 1..6 {
+    yigindi = yigindi + i
+    print("  " + String(i) + " -> jami: " + String(yigindi))
+}
+
+print("1 dan 5 gacha yigindi: " + String(yigindi))

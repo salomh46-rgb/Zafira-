@@ -1,0 +1,12 @@
+// Python interop sinovi
+import py.math
+
+let pi = math.pi
+print("PI = " + String(pi))
+
+let ildiz = math.sqrt(144.0)
+print("144 ning kvadrat ildizi: " + String(ildiz))
+
+import py.random
+let tasodifiy = random.randint(1, 100)
+print("Tasodifiy son: " + String(tasodifiy))

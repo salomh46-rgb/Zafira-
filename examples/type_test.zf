@@ -1,0 +1,10 @@
+// To'g'ri ishlaydigan:
+seal fn qo'sh(a: Int, b: Int) -> Int {
+    return a + b
+}
+print(String(qo'sh(5, 3)))
+
+// Noto'g'ri (type error berishi kerak):
+// seal fn test(x: Int) -> Int {
+//     return "salom"   // String qaytarilyapti, Int kutilgan!
+// }

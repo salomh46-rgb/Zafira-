@@ -1,0 +1,75 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ZAFIRA TILI - Ilg'or xususiyatlar namunasi
+//  Fayl: advanced.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ─── 1. STRUCT (Ma'lumot tuzilmasi) ───
+struct Talaba {
+    ism: String,
+    ball: Int,
+    guruh: String
+}
+
+// ─── 2. SEAL funksiya (invariant bilan) ───
+// "where" sharti: bo'luvchi 0 bo'lmasligi SHART
+// Agar shart bajarilmasa — ijro paytida xato beriladi
+seal fn ball_ortalama(jami: Int, son: Int) -> Float
+    where son > 0
+{
+    return jami / son
+}
+
+// ─── 3. Ro'yxat (List) bilan ishlash ───
+let talabalar = [
+    "Jasper",
+    "Alisher",
+    "Nodira",
+    "Zulfiya"
+]
+
+print("=== Talabalar ro'yxati ===")
+for ism in talabalar {
+    print("  - " + ism)
+}
+
+print("Jami talabalar: " + String(talabalar.len))
+
+// ─── 4. Rekursiv funksiya ───
+fn faktorial(n) {
+    if n <= 1 {
+        return 1
+    }
+    return n * faktorial(n - 1)
+}
+
+print("\n=== Faktorial ===")
+for i in 1..8 {
+    print(String(i) + "! = " + String(faktorial(i)))
+}
+
+// ─── 5. While tsikl ───
+print("\n=== Fibonacci ketma-ketligi (20 gacha) ===")
+let a = 0
+let b = 1
+while a < 20 {
+    print(String(a))
+    let vaqtinchalik = b
+    b = a + b
+    a = vaqtinchalik
+}
+
+// ─── 6. Seal funksiyani ishlatish ───
+print("\n=== Sinov: Xavfsiz bo'lish ===")
+let natija = ball_ortalama(450, 5)
+print("O'rtacha ball: " + String(natija))
+
+// ─── 7. @gpu bloki (hozircha draft mode: CPU da bajariladi) ───
+print("\n=== @gpu blok sinovi ===")
+run @auto {
+    let vektor_uzunlik = 1000
+    let yigindi = 0
+    for i in 0..1000 {
+        yigindi = yigindi + i
+    }
+    print("Vektorlar yig'indisi: " + String(yigindi))
+}

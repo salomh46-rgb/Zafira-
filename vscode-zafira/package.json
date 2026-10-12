@@ -1,0 +1,34 @@
+{
+  "name": "zafira-lang",
+  "displayName": "Zafira Language",
+  "description": "Syntax highlighting for Zafira (.zf) programming language",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "zafira",
+        "aliases": [
+          "Zafira",
+          "zf"
+        ],
+        "extensions": [
+          ".zf"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "zafira",
+        "scopeName": "source.zafira",
+        "path": "./syntaxes/zafira.tmLanguage.json"
+      }
+    ]
+  }
+}
