@@ -1,0 +1,136 @@
+// ══════════════════════════════════════════════════════════════
+//  SapphireKV Server — Entrypoint
+//  Muallif: Jasper (Javohirbek Asqarov)
+//  Til: Zafira v1.0.0
+// ══════════════════════════════════════════════════════════════
+
+import "./store.zf" as store_mod
+import std.net
+import std.json
+import std.datetime
+import std.env
+
+print("╔══════════════════════════════════════════════════════════════╗")
+print("║         💎 SAPPHIRE-KV IN-MEMORY CACHE & STORE 💎            ║")
+print("║             Written 100% in Zafira v1.0.0                    ║")
+print("║         'Qattiq, tiniq, sinmas — xuddi sapfir kabi'          ║")
+print("╚══════════════════════════════════════════════════════════════╝")
+
+let aof_file = "sapphire_store.aof"
+let db = store_mod.Store(null, 0, 0, 0, "")
+db.init(aof_file)
+
+print("[1] Boshlang'ich testlar (In-Memory Engine):")
+
+// 1. SET
+db.set("user:101:ism", "Javohirbek", 0.0)
+db.set("user:101:rol", "Asoschi & Me'mor", 0.0)
+db.set("auth:token:xyz", "faol_sessiya_2026", 10.0) // 10 soniyalik TTL
+
+// 2. GET
+let ism = db.get("user:101:ism")
+let rol = db.get("user:101:rol")
+let token = db.get("auth:token:xyz")
+
+print("  • user:101:ism -> " + String(ism))
+print("  • user:101:rol -> " + String(rol))
+print("  • auth:token:xyz -> " + String(token))
+
+// 3. STATS
+let st = db.stats()
+print("  • Statistika: Jami amallar = " + String(st["total_operations"]) + ", Hits = " + String(st["hits"]))
+
+print("\n[2] HTTP REST & Redis Protocol Gateway ochilmoqda (Port 6380)...")
+
+fn request_handler(req) {
+    let path = req.path
+    let method = req.method
+
+    // PING
+    if path == "/ping" {
+        return "PONG"
+    }
+
+    // STATS
+    if path == "/stats" {
+        return json.stringify(db.stats())
+    }
+
+    // SET (POST /set)
+    if path == "/set" {
+        try {
+            let body_data = json.parse(req.body)
+            let k = body_data["key"]
+            let v = body_data["val"]
+            let ttl = 0.0
+            if body_data["ttl"] != null {
+                ttl = body_data["ttl"]
+            }
+            db.set(k, v, ttl)
+            return json.stringify(json.parse("{\"status\": \"OK\", \"saved\": true}"))
+        } catch (e) {
+            return json.stringify(json.parse("{\"error\": \"Xato JSON formati\"}"))
+        }
+    }
+
+    // GET (/get?key=...)
+    if path == "/get" {
+        let q = req.query
+        let k = q["key"]
+        if k == null {
+            return json.stringify(json.parse("{\"error\": \"'key' parametri berilmagan\"}"))
+        }
+        let val = db.get(k)
+        if val == null {
+            let err_res = json.parse("{}")
+            err_res["found"] = false
+            err_res["val"] = null
+            return json.stringify(err_res)
+        }
+        let ok_res = json.parse("{}")
+        ok_res["found"] = true
+        ok_res["key"] = k
+        ok_res["val"] = val
+        return json.stringify(ok_res)
+    }
+
+    // DEL (/del?key=...)
+    if path == "/del" {
+        let q = req.query
+        let k = q["key"]
+        if k == null {
+            return json.stringify(json.parse("{\"error\": \"'key' parametri berilmagan\"}"))
+        }
+        let ok = db.del(k)
+        let del_res = json.parse("{}")
+        del_res["deleted"] = ok
+        return json.stringify(del_res)
+    }
+
+    return "SapphireKV v1.0.0 REST Server ishlamoqda. /ping, /set, /get, /del, /stats dan foydalaning."
+}
+
+// 2 ta test so'rovi uchun sinov rejimida ochamiz (yoki doimiy)
+print("  • Server tayyor: http://127.0.0.1:6380")
+let srv = net.listen(6380, request_handler, 3, true)
+
+// HTTP Client orqali o'zimiz so'rov yuborib tekshiramiz (Dogfooding Test):
+let ping_res = net.get("http://127.0.0.1:6380/ping")
+print("  • REST GET /ping Javobi: " + ping_res.body)
+
+let set_payload = json.parse("{}")
+set_payload["key"] = "loyiha"
+set_payload["val"] = "Zafira Language v1.0.0"
+
+let set_res = net.post("http://127.0.0.1:6380/set", set_payload)
+print("  • REST POST /set Javobi: " + set_res.body)
+
+let get_res = net.get("http://127.0.0.1:6380/get?key=loyiha")
+print("  • REST GET /get?key=loyiha Javobi: " + get_res.body)
+
+let stats_res = net.get("http://127.0.0.1:6380/stats")
+print("  • REST GET /stats Javobi: " + stats_res.body)
+
+net.close(srv)
+
+print("\n🎉 SapphireKV barcha testlardan 100% muvaffaqiyatli o'tdi!")

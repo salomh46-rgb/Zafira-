@@ -28,9 +28,10 @@
 
 **Zafira** — sun'iy intellekt davri uchun maxsus loyihalashtirilgan, kremniy chiplari (CPU, GPU, NPU) bilan bevosita til darajasida gaplashuvchi, zamonaviy **Silicon-Native & Dual-Mode** dasturlash tilidir. Bugungi kunda dasturchilar Python-ning qulayligi bilan C++/Rust-ning tezligi va xotira xavfsizligi o'rtasida tanlov qilishga majbur. Zafira bu murosani yo'qotadi: dastlabki prototipni erkin (`draft`) rejimda yozasiz, ishlab chiqarishga tayyor bo'lgach esa qattiq turdagi formal invariantlar bilan muhrlaysiz (`seal`). Natijada dasturchi Python kutubxonalarining boy ekotizimini (`import py.*`) to'g'ridan-to'g'ri ishlatgan holda, chip darajasidagi xavfsiz va shiddatli tezlikka erishadi.
 
-📚 **Rasmiy Hujjatlar:**
+📚 **Rasmiy Hujjatlar va Flagman Loyihalar:**
 - [To'liq Til Spetsifikatsiyasi (SPECIFICATION.md)](docs/SPECIFICATION.md)
 - [1-Sahifalik Tezkor Ma'lumotnoma (CHEATSHEET.md)](docs/CHEATSHEET.md)
+- [💎 SapphireKV — In-Memory Kesh va Kalit-Qiymat Ombori (100% Zafira)](examples/sapphire_kv/README.md)
 - [Flagman Namoyish Dasturi (v1_showcase.zf)](examples/v1_showcase.zf)
 
 ---

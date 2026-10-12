@@ -37,9 +37,10 @@ Historically, software engineers have been forced to make a painful compromise:
 2. **`seal` Mode**: When preparing for production, seal functions with strict types and formal `where` invariants that are statically proven at compile-time before code ever runs.
 3. **Zero-Overhead Python Bridge**: Seamlessly import any library in the Python universe (`import py.torch`, `import py.pandas`, `import py.numpy`) with zero FFI glue.
 
-📚 **Official Documentation:**
+📚 **Official Documentation & Flagship Projects:**
 - [Complete Language Specification (SPECIFICATION.md)](docs/SPECIFICATION.md)
 - [1-Page High-Density Developer Cheatsheet (CHEATSHEET.md)](docs/CHEATSHEET.md)
+- [💎 SapphireKV — In-Memory Key-Value & Cache Engine (100% Zafira)](examples/sapphire_kv/README.md)
 - [Flagship Production Showcase (examples/v1_showcase.zf)](examples/v1_showcase.zf)
 
 ---

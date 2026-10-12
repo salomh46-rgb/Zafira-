@@ -1,0 +1,9 @@
+{
+  "name": "sapphire_kv",
+  "version": "1.0.0",
+  "description": "Ultra-fast In-Memory Key-Value & Cache Store with HTTP REST API & AOF Persistence written 100% in Zafira",
+  "author": "Javohirbek Asqarov (Jasper)",
+  "license": "MIT",
+  "entry": "src/main.zf",
+  "dependencies": {}
+}

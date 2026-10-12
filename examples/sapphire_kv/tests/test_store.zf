@@ -1,0 +1,76 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SapphireKV — Storage Engine Unit Tests
+// Fayl: tests/test_store.zf
+// Muallif: Jasper
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import "../src/store.zf" as store_mod
+import std.datetime
+import std.fs
+
+print("[TEST 1] Store initsializatsiyasi...")
+let test_aof = "test_store.aof"
+if fs.exists(test_aof) {
+    fs.remove(test_aof)
+}
+
+let db = store_mod.Store(null, 0, 0, 0, "")
+db.init(test_aof)
+
+print("[TEST 2] SET va GET tekshiruvi...")
+db.set("name", "Jasper", 0.0)
+let val = db.get("name")
+if val != "Jasper" {
+    print("XATO: val kutilgan 'Jasper' emas, balki: " + String(val))
+    1 / 0
+}
+print("  ✓ SET va GET muvaffaqiyatli: name == " + String(val))
+
+print("[TEST 3] EXISTS va DEL tekshiruvi...")
+if db.exists("name") != true {
+    print("XATO: exists('name') true bo'lishi kerak!")
+    1 / 0
+}
+let deleted = db.del("name")
+if deleted != true {
+    print("XATO: del('name') true bo'lishi kerak!")
+    1 / 0
+}
+if db.get("name") != null {
+    print("XATO: o'chirilgan kalit null bo'lishi kerak!")
+    1 / 0
+}
+print("  ✓ EXISTS va DEL muvaffaqiyatli")
+
+print("[TEST 4] TTL (Muddati o'tish) tekshiruvi...")
+db.set("session", "xyz123", 0.2) // 200 ms
+if db.get("session") != "xyz123" {
+    print("XATO: session dastlab mavjud bo'lishi kerak!")
+    1 / 0
+}
+datetime.sleep_ms(300)
+if db.get("session") != null {
+    print("XATO: 300ms dan keyin session muddati o'tib null bo'lishi kerak edi!")
+    1 / 0
+}
+print("  ✓ TTL lazy expiration muvaffaqiyatli")
+
+print("[TEST 5] AOF Qayta Tiklash (Persistence) tekshiruvi...")
+db.set("p_key", "mustahkam_qiymat", 0.0)
+db.persist()
+
+let db2 = store_mod.Store(null, 0, 0, 0, "")
+db2.init(test_aof)
+let recovered = db2.get("p_key")
+if recovered != "mustahkam_qiymat" {
+    print("XATO: AOF dan tiklangan qiymat mos kelmadi!")
+    1 / 0
+}
+print("  ✓ AOF tiklash muvaffaqiyatli: " + String(recovered))
+
+// Test AOF faylini tozalaymiz
+if fs.exists(test_aof) {
+    fs.remove(test_aof)
+}
+
+print("🎉 Barcha Store unit testlari 100% Yashil o'tdi!")

@@ -1,0 +1,15 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// sapphire_kv - Namuna Test 🔷
+// Fayl: tests/test_main.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+let a = 10
+let b = 20
+let natija = a + b
+
+if natija == 30 {
+    print("test_main muvaffaqiyatli o'tdi: a + b == 30")
+} else {
+    print("test_main xato!")
+    1 / 0
+}

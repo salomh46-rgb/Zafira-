@@ -1,0 +1,146 @@
+// ══════════════════════════════════════════════════════════════
+//  SapphireKV — In-Memory Key-Value & Cache Engine
+//  Muallif: Jasper (Javohirbek Asqarov)
+//  Til: Zafira v1.0.0
+// ══════════════════════════════════════════════════════════════
+
+import std.datetime
+import std.fs
+import std.json
+
+// Kesh elementi strukturasi
+struct CacheItem {
+    key: String,
+    value: String,
+    created_at: Float,
+    expires_at: Float   // 0.0 bo'lsa cheksiz (no expiry)
+}
+
+impl CacheItem {
+    fn is_expired(self, current_time: Float) {
+        if self.expires_at == 0.0 {
+            return false
+        }
+        return current_time > self.expires_at
+    }
+}
+
+// Asosiy Ombor (Storage Engine)
+struct Store {
+    items: JsonObject,
+    total_ops: Int,
+    hits: Int,
+    misses: Int,
+    aof_path: String
+}
+
+impl Store {
+    fn init(self, aof_file: String) {
+        self.items = json.parse("{}")
+        self.total_ops = 0
+        self.hits = 0
+        self.misses = 0
+        self.aof_path = aof_file
+        
+        // Agar AOF fayli mavjud bo'lsa, xotiraga tiklaymiz
+        if fs.exists(self.aof_path) {
+            let content = fs.read_text(self.aof_path)
+            if content != "" {
+                try {
+                    self.items = json.parse(content)
+                } catch (e) {
+                    print("[SapphireKV] AOF tiklashda ogohlantirish: " + String(e))
+                }
+            }
+        }
+    }
+
+    // Qiymatni yozish (SET)
+    fn set(self, key: String, val: String, ttl_seconds: Float) {
+        self.total_ops = self.total_ops + 1
+        let now = datetime.timestamp()
+        let exp = 0.0
+        if ttl_seconds > 0.0 {
+            exp = now + ttl_seconds
+        }
+
+        let item = json.parse("{}")
+        item["key"] = key
+        item["val"] = val
+        item["created"] = now
+        item["exp"] = exp
+
+        self.items[key] = item
+        self.persist()
+        return true
+    }
+
+    // Qiymatni o'qish (GET)
+    fn get(self, key: String) {
+        self.total_ops = self.total_ops + 1
+        
+        let item = self.items[key]
+        if item == null {
+            self.misses = self.misses + 1
+            return null
+        }
+
+        let exp = item["exp"]
+        if exp > 0.0 {
+            let now = datetime.timestamp()
+            if now > exp {
+                // Muddati o'tgan, o'chiramiz (Lazy Expiration)
+                self.items[key] = null
+                self.misses = self.misses + 1
+                self.persist()
+                return null
+            }
+        }
+
+        self.hits = self.hits + 1
+        return item["val"]
+    }
+
+    // Kalitni o'chirish (DEL)
+    fn del(self, key: String) {
+        self.total_ops = self.total_ops + 1
+        if self.items[key] != null {
+            self.items[key] = null
+            self.persist()
+            return true
+        }
+        return false
+    }
+
+    // Kalit mavjudligini tekshirish (EXISTS)
+    fn exists(self, key: String) {
+        return self.get(key) != null
+    }
+
+    // Xotiradagi ma'lumotlarni AOF fayliga doimiy saqlash
+    fn persist(self) {
+        try {
+            let data_str = json.stringify(self.items)
+            fs.write_text(self.aof_path, data_str)
+        } catch (e) {
+            print("[SapphireKV AOF Xatosi] " + String(e))
+        }
+    }
+
+    // Statistikani hisoblash (STATS)
+    fn stats(self) {
+        let res = json.parse("{}")
+        res["total_operations"] = self.total_ops
+        res["hits"] = self.hits
+        res["misses"] = self.misses
+        res["engine"] = "Zafira In-Memory KV"
+        return res
+    }
+
+    // To'liq tozalash (FLUSH)
+    fn flush(self) {
+        self.items = json.parse("{}")
+        self.persist()
+        return true
+    }
+}
