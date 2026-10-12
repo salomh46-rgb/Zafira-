@@ -1,0 +1,72 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ZAFIRA TILI - Regular Ifodalar Moduli (std.regex) Namunasi
+//  Fayl: examples/regex_test.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import std.regex
+
+print("==================================================")
+print("     ZAFIRA REGEX (STD.REGEX) MODULI SINOVI       ")
+print("==================================================")
+
+// ─── 1. REGEX TEST (Email tekshirish) ───
+print("\n>>> 1. REGEX.TEST (Email tekshirish) <<<")
+let email_pattern = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+
+let email1 = "jasur@gmail.com"
+let email2 = "noto'g'ri-email@"
+
+let res1 = regex.test(email_pattern, email1)
+let res2 = regex.test(email_pattern, email2)
+
+print("Email 1: " + email1 + " -> To'g'rimi? " + String(res1))
+print("Email 2: " + email2 + " -> To'g'rimi? " + String(res2))
+
+// ─── 2. REGEX FIND (Birinchi mos kelgan qism) ───
+print("\n>>> 2. REGEX.FIND (Birinchi moslik) <<<")
+let matn_narx = "Buyurtma ID: 78945, umumiy summa: 350000 so'm"
+let birinchi_raqam = regex.find("\\d+", matn_narx)
+print("Matn: " + matn_narx)
+print("Birinchi topilgan raqam: " + String(birinchi_raqam))
+
+// ─── 3. REGEX FIND_ALL (Barcha raqamlarni topish) ───
+print("\n>>> 3. REGEX.FIND_ALL (Barcha raqamlarni topish) <<<")
+let inventar = "Ombor 1: 15 ta olma, Ombor 2: 42 ta nok, Ombor 3: 108 ta anor"
+let raqamlar = regex.find_all("\\d+", inventar)
+print("Matn: " + inventar)
+print("Topilgan barcha raqamlar soni: " + String(raqamlar.len))
+for num in raqamlar {
+    print("  - Raqam: " + String(num))
+}
+
+// ─── 4. REGEX REPLACE & REPLACE_ALL (Matn almashtirish) ───
+print("\n>>> 4. REGEX.REPLACE & REPLACE_ALL (Matn almashtirish) <<<")
+let kontakt = "Telefonlar: 998901234567 yoki 998911234567 orqali bog'laning"
+let bitta_almashtirish = regex.replace("\\d+", "***", kontakt)
+let hammasi_almashtirish = regex.replace_all("\\d+", "***", kontakt)
+
+print("Asl matn: " + kontakt)
+print("Bitta almashtirish (replace):     " + bitta_almashtirish)
+print("Barcha almashtirish (replace_all): " + hammasi_almashtirish)
+
+// ─── 5. REGEX SPLIT (Matnni pattern bo'yicha bo'lish) ───
+print("\n>>> 5. REGEX.SPLIT (Bo'lish) <<<")
+let ma_lumot = "Toshkent,  Samarqand; Buxoro,Andijon;Farg'ona"
+let shaharlar = regex.split("[,;]\\s*", ma_lumot)
+print("Ajratilayotgan matn: " + ma_lumot)
+print("Bo'lingan qismlar:")
+for shahar in shaharlar {
+    print("  * " + shahar)
+}
+
+// ─── 6. REGEX IS_VALID (Pattern to'g'riligini tekshirish) ───
+print("\n>>> 6. REGEX.IS_VALID (Pattern sintaksisi) <<<")
+let togri_pattern = "^[0-9]+$"
+let xato_pattern = "[0-9"
+
+print("Pattern '" + togri_pattern + "' to'g'rimi? " + String(regex.is_valid(togri_pattern)))
+print("Pattern '" + xato_pattern + "' to'g'rimi? " + String(regex.is_valid(xato_pattern)))
+
+print("\n==================================================")
+print("      STD.REGEX SINOVI MUVAFFAQIShLI YAKUNLANDI   ")
+print("==================================================")

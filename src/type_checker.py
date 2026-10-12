@@ -542,6 +542,15 @@ class TypeChecker:
                     raise TypeCheckError(f"'{node.path}' moduli topilmadi!")
                 target_name = getattr(node, 'alias', None) or mod_name
                 env.declare(target_name, type_name='Any', is_const=True)
+                if mod_name == 'ffi':
+                    env.declare_struct('FfiLibrary', [
+                        ('name', 'String'), ('call', 'Fn'), ('has_symbol', 'Fn'), ('has', 'Fn')
+                    ])
+                    env.declare_struct('CInt', [('type', 'String'), ('value', 'Int')])
+                    env.declare_struct('CFloat', [('type', 'String'), ('value', 'Float')])
+                    env.declare_struct('CDouble', [('type', 'String'), ('value', 'Float')])
+                    env.declare_struct('CString', [('type', 'String'), ('value', 'String')])
+                    env.declare_struct('CBool', [('type', 'String'), ('value', 'Bool')])
         elif node.path.startswith('py.'):
             mod_path = node.path[3:]
             root_name = mod_path.split('.')[0]
@@ -875,6 +884,49 @@ class TypeChecker:
                 if callee.member in ('sleep', 'sleep_ms'):
                     return 'Null'
                 raise TypeCheckError(f"std.datetime modulida '{callee.member}' funksiyasi mavjud emas!")
+            if isinstance(callee.obj, Identifier) and callee.obj.name == 'crypto':
+                if callee.member in (
+                    'sha256', 'sha512', 'md5', 'hmac_sha256',
+                    'base64_encode', 'base64_decode', 'uuid', 'random_hex'
+                ):
+                    return 'String'
+                if callee.member in ('random_bytes',):
+                    return 'List'
+                raise TypeCheckError(f"std.crypto modulida '{callee.member}' funksiyasi mavjud emas!")
+            if isinstance(callee.obj, Identifier) and callee.obj.name in ('regex', 're'):
+                if callee.member in ('test', 'is_valid'):
+                    return 'Bool'
+                if callee.member in ('find',):
+                    return 'Any'
+                if callee.member in ('replace', 'replace_all'):
+                    return 'String'
+                if callee.member in ('find_all', 'split'):
+                    return 'List'
+                raise TypeCheckError(f"std.regex modulida '{callee.member}' funksiyasi mavjud emas!")
+            if isinstance(callee.obj, Identifier) and callee.obj.name == 'ffi':
+                if callee.member in ('load', 'libc'):
+                    return 'FfiLibrary'
+                if callee.member in ('c_int',):
+                    return 'CInt'
+                if callee.member in ('c_float',):
+                    return 'CFloat'
+                if callee.member in ('c_double',):
+                    return 'CDouble'
+                if callee.member in ('c_string',):
+                    return 'CString'
+                if callee.member in ('c_bool',):
+                    return 'CBool'
+                if callee.member in ('has_symbol', 'has'):
+                    return 'Bool'
+                if callee.member in ('call',):
+                    return 'Any'
+                raise TypeCheckError(f"std.ffi modulida '{callee.member}' funksiyasi mavjud emas!")
+            if obj_type == 'FfiLibrary':
+                if callee.member in ('has_symbol', 'has'):
+                    return 'Bool'
+                if callee.member in ('call',):
+                    return 'Any'
+                raise TypeCheckError(f"FfiLibrary strukturasida '{callee.member}' metodi mavjud emas!")
             if obj_type in env.all_structs():
                 method_sig = env.lookup_struct_method(obj_type, callee.member)
                 if method_sig is not None:
@@ -919,6 +971,33 @@ class TypeChecker:
             ):
                 return 'Fn'
             raise TypeCheckError(f"std.datetime modulida '{node.member}' a'zosi mavjud emas!")
+        if isinstance(node.obj, Identifier) and node.obj.name == 'crypto':
+            if node.member in (
+                'sha256', 'sha512', 'md5', 'hmac_sha256',
+                'base64_encode', 'base64_decode',
+                'uuid', 'random_bytes', 'random_hex'
+            ):
+                return 'Fn'
+            raise TypeCheckError(f"std.crypto modulida '{node.member}' a'zosi mavjud emas!")
+        if isinstance(node.obj, Identifier) and node.obj.name in ('regex', 're'):
+            if node.member in (
+                'test', 'find', 'find_all', 'replace', 'replace_all', 'split', 'is_valid'
+            ):
+                return 'Fn'
+            raise TypeCheckError(f"std.regex modulida '{node.member}' a'zosi mavjud emas!")
+        if isinstance(node.obj, Identifier) and node.obj.name == 'ffi':
+            if node.member in (
+                'load', 'libc', 'c_int', 'c_float', 'c_double', 'c_string', 'c_bool',
+                'call', 'has_symbol', 'has'
+            ):
+                return 'Fn'
+            raise TypeCheckError(f"std.ffi modulida '{node.member}' a'zosi mavjud emas!")
+        if obj_type == 'FfiLibrary':
+            if node.member in ('call', 'has_symbol', 'has'):
+                return 'Fn'
+            if node.member == 'name':
+                return 'String'
+            raise TypeCheckError(f"FfiLibrary strukturasida '{node.member}' a'zosi mavjud emas!")
         if obj_type == 'List':
             if node.member == 'len': return 'Int'
             if node.member in ('first', 'last'): return 'Any'

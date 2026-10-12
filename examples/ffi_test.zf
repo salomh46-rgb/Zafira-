@@ -1,0 +1,95 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ZAFIRA TILI - C FFI (Foreign Function Interface) Namunasi
+//  Fayl: examples/ffi_test.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import std.ffi
+
+print("==================================================")
+print("    ZAFIRA C FFI (std.ffi) IMKONIYATLARI SINOVI   ")
+print("==================================================")
+
+// ─── 1. STANDART C KUTUBXONASINI YUKLASH ───
+print("\n>>> 1. Standart C kutubxonasini yuklash (libc / msvcrt) <<<")
+let libc = ffi.load("libc")
+print("Yuklangan kutubxona nomi: " + libc.name)
+
+// Simvollarni tekshirish (has_symbol)
+let has_abs = libc.has_symbol("abs")
+let has_sqrt = libc.has_symbol("sqrt")
+let has_puts = libc.has_symbol("puts")
+let has_fake = libc.has_symbol("non_existent_symbol_xyz")
+
+print("abs funksiyasi mavjudmi:  " + String(has_abs))
+print("sqrt funksiyasi mavjudmi: " + String(has_sqrt))
+print("puts funksiyasi mavjudmi: " + String(has_puts))
+print("fake funksiyasi bormi:    " + String(has_fake))
+
+// ─── 2. C MATEMATIK FUNKSIYALARINI CHAQIRISH ───
+print("\n>>> 2. C Matematik funksiyalarini chaqirish <<<")
+
+// 2.1 abs (int)
+let manfiy_son = -123
+let musbat_son = libc.call("abs", [manfiy_son], "int")
+print("abs(-123) natijasi: " + String(musbat_son))
+
+// 2.2 sqrt (float / double)
+let kvadrat_ildiz = libc.call("sqrt", [144.0], "float")
+print("sqrt(144.0) natijasi: " + String(kvadrat_ildiz))
+
+// 2.3 pow (float / double)
+let daraja = libc.call("pow", [2.0, 10.0], "float")
+print("pow(2.0, 10.0) natijasi: " + String(daraja))
+
+// ─── 3. C SATR VA I/O FUNKSIYALARINI CHAQIRISH ───
+print("\n>>> 3. C Satr (String) va I/O funksiyalari <<<")
+
+// 3.1 strlen
+let matn = "Zafira C FFI moduli muvaffaqiyatli ishga tushdi!"
+let uzunlik = libc.call("strlen", [matn], "int")
+print("Satr uzunligi (strlen): " + String(uzunlik))
+
+// 3.2 puts
+print("C puts() orqali konsolga chiqarish:")
+libc.call("puts", ["   -> Salom, bu C puts() funksiyasi orqali chiqarilgan matn!"])
+
+// ─── 4. C TURLARI (c_int, c_float, c_string) BILAN ISHLASH ───
+print("\n>>> 4. Maxsus C turlari bilan ishlash <<<")
+
+let c_son = ffi.c_int(-999)
+print("c_int turi: " + c_son.type + ", qiymati: " + String(c_son.value))
+let abs_c = libc.call("abs", [c_son], "int")
+print("abs(c_int(-999)): " + String(abs_c))
+
+let c_haqiqiy = ffi.c_float(49.0)
+print("c_float turi: " + c_haqiqiy.type + ", qiymati: " + String(c_haqiqiy.value))
+let sqrt_c = libc.call("sqrt", [c_haqiqiy], "float")
+print("sqrt(c_float(49.0)): " + String(sqrt_c))
+
+let c_satr = ffi.c_string("O'zbekiston - Zafira FFI")
+print("c_string turi: " + c_satr.type + ", qiymati: " + c_satr.value)
+let len_c = libc.call("strlen", [c_satr], "int")
+print("strlen(c_string): " + String(len_c))
+
+// ─── 5. XATOLIKLARNI USHLASH (ERROR HANDLING) ───
+print("\n>>> 5. Xatoliklarni ushlash (try / catch) <<<")
+
+// 5.1 Mavjud bo'lmagan kutubxona
+try {
+    let topilmas_lib = ffi.load("mavjud_bolmagan_kutubxona_xyz123")
+    print("XATO: Kutubxona topilmasligi kerak edi!")
+} catch (xato1) {
+    print("Kutubxona xatosi muvaffaqiyatli ushlandi: " + xato1)
+}
+
+// 5.2 Mavjud bo'lmagan funksiya
+try {
+    let natija_xato = libc.call("topilmas_funksiya_abc")
+    print("XATO: Funksiya chaqirilmasligi kerak edi!")
+} catch (xato2) {
+    print("Funksiya topilmadi xatosi ushlandi: " + xato2)
+}
+
+print("\n==================================================")
+print("   BARCHA C FFI TESTLARI MUVAFFAQIYATLI O'TDI!    ")
+print("==================================================")

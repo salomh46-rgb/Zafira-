@@ -1,0 +1,77 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ZAFIRA TILI - Kriptografiya Moduli (std.crypto) Namunasi
+//  Fayl: crypto_test.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import std.crypto
+
+print("==================================================")
+print("      ZAFIRA KRIPTOGRAFIYA MODULI SINOVI          ")
+print("==================================================")
+
+let sinov_matni = "Zafira 2026 - Qattiq, tiniq, sinmas sapfir!"
+print("Asl matn: " + sinov_matni)
+
+// ─── 1. SHA-256 VA SHA-512 XESHLASH ───
+print("\n>>> 1. SHA-256 va SHA-512 Xeshlash <<<")
+let hash_sha256 = crypto.sha256(sinov_matni)
+print("SHA-256: " + hash_sha256)
+
+let hash_sha512 = crypto.sha512(sinov_matni)
+print("SHA-512: " + hash_sha512)
+
+// ─── 2. MD5 XESHLASH ───
+print("\n>>> 2. MD5 Xeshlash <<<")
+let hash_md5 = crypto.md5(sinov_matni)
+print("MD5:     " + hash_md5)
+
+// ─── 3. HMAC-SHA256 IMZOLASH ───
+print("\n>>> 3. HMAC-SHA256 Imzolash <<<")
+let maxfiy_kalit = "super_maxfiy_kalit_2026"
+let hmac_imzo = crypto.hmac_sha256(maxfiy_kalit, sinov_matni)
+print("Kalit:   " + maxfiy_kalit)
+print("HMAC:    " + hmac_imzo)
+
+// ─── 4. BASE64 KODLASH VA DEKODLASH ───
+print("\n>>> 4. Base64 Kodlash va Dekodlash <<<")
+let base64_matn = crypto.base64_encode(sinov_matni)
+print("Base64 kodlangan:  " + base64_matn)
+
+let tiklangan_matn = crypto.base64_decode(base64_matn)
+print("Base64 tiklangan:  " + tiklangan_matn)
+
+if tiklangan_matn == sinov_matni {
+    print("Muvaffaqiyat: Tiklangan matn asl matn bilan 100% mos!")
+} else {
+    print("Xato: Tiklangan matn mos kelmadi!")
+}
+
+// ─── 5. UUID v4 GENERATSIYASI ───
+print("\n>>> 5. UUID v4 Generatsiyasi <<<")
+let yangi_uuid = crypto.uuid()
+print("Yangi UUID v4: " + yangi_uuid)
+
+// ─── 6. TASODIFIY HEX VA TASODIFIY BAYTLAR ───
+print("\n>>> 6. Kriptografik Tasodifiy Ma'lumotlar <<<")
+let token16 = crypto.random_hex(16)
+print("16-baytli tasodifiy HEX token (32 belgi): " + token16)
+
+let token32 = crypto.random_hex(32)
+print("32-baytli tasodifiy HEX token (64 belgi): " + token32)
+
+let baytlar = crypto.random_bytes(8)
+print("Tasodifiy baytlar ro'yxati (uzunligi): " + String(baytlar.len))
+print("Birinchi bayt (0-255): " + String(baytlar[0]))
+
+// ─── 7. XATOLIKLARNI USHLASH (TRY / CATCH) ───
+print("\n>>> 7. Noto'g'ri Base64 Dekodlash Xatosini Ushlash <<<")
+try {
+    let xato_natija = crypto.base64_decode("noto'g'ri_base64_satr!#?")
+    print("Bu qator ko'rinmasligi kerak: " + xato_natija)
+} catch (xatolik) {
+    print("Kutilgan xatolik muvaffaqiyatli ushlandi: " + xatolik)
+}
+
+print("\n==================================================")
+print("   STD.CRYPTO MODULI SINOVI TUGADI (100% OK)      ")
+print("==================================================")

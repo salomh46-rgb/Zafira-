@@ -402,6 +402,33 @@ def _get_datetime_module() -> ZafiraModule:
 DATETIME_MODULE = _get_datetime_module()
 
 
+# ─── 11. STD.CRYPTO ───
+
+def _get_crypto_module() -> ZafiraModule:
+    from src.std_crypto import create_crypto_module
+    return create_crypto_module()
+
+CRYPTO_MODULE = _get_crypto_module()
+
+
+# ─── 12. STD.REGEX ───
+
+def _get_regex_module() -> ZafiraModule:
+    from src.std_regex import create_regex_module
+    return create_regex_module()
+
+REGEX_MODULE = _get_regex_module()
+
+
+# ─── 13. STD.FFI ───
+
+def _get_ffi_module() -> ZafiraModule:
+    from src.std_ffi import create_ffi_module
+    return create_ffi_module()
+
+FFI_MODULE = _get_ffi_module()
+
+
 # ─── STDLIB MODULES RO'YXATI ───
 
 STDLIB_MODULES: Dict[str, ZafiraModule] = {
@@ -415,6 +442,9 @@ STDLIB_MODULES: Dict[str, ZafiraModule] = {
     'fs': FS_MODULE,
     'env': ENV_MODULE,
     'datetime': DATETIME_MODULE,
+    'crypto': CRYPTO_MODULE,
+    'regex': REGEX_MODULE,
+    'ffi': FFI_MODULE,
 }
 
 
