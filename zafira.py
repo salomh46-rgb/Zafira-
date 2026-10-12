@@ -29,10 +29,13 @@ from src.interpreter import Interpreter, ZafiraError
 from src.transpiler import Transpiler
 
 
-from src.package_manager import init_project, run_project, test_project, build_project
+from src.package_manager import (
+    init_project, run_project, test_project, build_project,
+    install_dependencies, add_dependency
+)
 
 
-ZAFIRA_VERSION = "0.8.0-alpha"
+ZAFIRA_VERSION = "1.0.0"
 
 BANNER = f"""
 ╔══════════════════════════════════════════════╗
@@ -231,6 +234,30 @@ def compile_file(filepath: str, output_path: Optional[str] = None, standalone: b
         sys.exit(1)
 
 
+def pack_cli(target: str = '.', output_path: Optional[str] = None, force_c_only: bool = False) -> Optional[str]:
+    """
+    Zafira loyihasi yoki faylini barcha bog'langan lokal modullari bilan bitta
+    mustaqil binar (.exe / ELF) yoki Single Translation Unit C manba kodiga paketlaydi.
+    """
+    from src.packager import pack_project
+
+    try:
+        print(f"\n[Zafira Pack] Standalone AOT paketlash boshlandi... 📦")
+        res = pack_project(project_dir=target, output_path=output_path, force_c_only=force_c_only)
+        print(f"[Zafira Pack] Standalone paket muvaffaqiyatli yaratildi! 🚀")
+        print(f"  ├── 📁 Kirish fayli:     {res['entry_file']}")
+        print(f"  ├── 🔗 Birlashtirildi:   {len(res['bundled_files'])} ta .zf fayl")
+        print(f"  ├── ⚙️  Kompilyator:     {res['compiler']}")
+        print(f"  ├── ⚡ Chiqish:          {res['output_path']} ({res['size_str']})")
+        if res.get('c_source_path') and res['output_path'] != res['c_source_path']:
+            print(f"  ├── 📄 C manba kodi:     {res['c_source_path']}")
+        print(f"  └── 🏃 Ishga tushirish:  {res['output_path']}\n")
+        return res['output_path']
+    except Exception as e:
+        print(f"\n[Zafira Pack XATO] {e}")
+        sys.exit(1)
+
+
 def main():
     args = sys.argv[1:]
 
@@ -238,11 +265,14 @@ def main():
         print(BANNER)
         print("Foydalanish:")
         print("  python zafira.py init <nomi>          — Yangi loyiha yaratish (ZPM)")
+        print("  python zafira.py install [loyiha]     — Qaramliklarni o'rnatish (zafira install)")
+        print("  python zafira.py add <paket> [loyiha] — Yangi paket qo'shish (zafira add)")
         print("  python zafira.py run [fayl/loyiha]    — Fayl yoki loyihani bajarish")
         print("  python zafira.py build [loyiha]       — Loyihani transpilyatsiya qilish (C ga)")
         print("  python zafira.py test [loyiha]        — Loyiha testlarini ishga tushirish")
         print("  python zafira.py transpile <fayl.zf>  — C kodiga aylantir (.c)")
         print("  python zafira.py compile <fayl.zf> [-o <chiqish.exe>] [--standalone] — Binar dasturga kompilyatsiya qil (.exe)")
+        print("  python zafira.py pack [loyiha/fayl.zf] [-o <chiqish.exe>] — AOT Single-Binary Standalone Packager")
         print("  python zafira.py repl                 — Interaktiv rejim")
         print("  python zafira.py tokens <fayl.zf>     — Tokenlarni ko'rsat")
         print("  python zafira.py ast <fayl.zf>        — AST ni ko'rsat")
@@ -258,6 +288,19 @@ def main():
         project_name = args[1]
         target_path = args[2] if len(args) > 2 else '.'
         init_project(project_name, target_path)
+
+    elif command == 'install':
+        project_dir = args[1] if len(args) > 1 else '.'
+        install_dependencies(project_dir)
+
+    elif command == 'add':
+        if len(args) < 2:
+            print("[Zafira] Paket nomi yoki manzili ko'rsatilmadi:")
+            print("  python zafira.py add <paket> [loyiha]")
+            sys.exit(1)
+        package_spec = args[1]
+        project_dir = args[2] if len(args) > 2 else '.'
+        add_dependency(package_spec, project_dir)
 
     elif command == 'build':
         project_dir = args[1] if len(args) > 1 else '.'
@@ -337,6 +380,44 @@ def main():
             sys.exit(1)
 
         compile_file(target_file, output_path=output_file, standalone=standalone)
+
+    elif command == 'pack':
+        pack_args = args[1:]
+        target_path = '.'
+        output_file = None
+        force_c_only = False
+
+        i = 0
+        while i < len(pack_args):
+            arg = pack_args[i]
+            if arg in ('-o', '--output'):
+                if i + 1 < len(pack_args):
+                    output_file = pack_args[i + 1]
+                    i += 2
+                    continue
+                else:
+                    print("[Zafira XATO] -o parametri uchun chiqish fayli ko'rsatilmadi!")
+                    sys.exit(1)
+            elif arg.startswith('-o='):
+                output_file = arg[3:]
+                i += 1
+                continue
+            elif arg.startswith('--output='):
+                output_file = arg[9:]
+                i += 1
+                continue
+            elif arg in ('--c-only', '-c'):
+                force_c_only = True
+                i += 1
+                continue
+            elif not arg.startswith('-'):
+                target_path = arg
+                i += 1
+                continue
+            else:
+                i += 1
+
+        pack_cli(target=target_path, output_path=output_file, force_c_only=force_c_only)
 
     elif command == 'repl':
         repl()

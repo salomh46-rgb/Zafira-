@@ -585,6 +585,64 @@ class Transpiler:
         self.emit("    return buf;")
         self.emit("}")
         self.emit("")
+        self.emit("// ─── Fayllar Tizimi (File System) C Runtime ───")
+        self.emit("static inline char* zf_fs_read_text(const char* path) {")
+        self.emit("    if (!path) return \"\";")
+        self.emit("    FILE* f = fopen(path, \"rb\");")
+        self.emit("    if (!f) return \"\";")
+        self.emit("    fseek(f, 0, SEEK_END);")
+        self.emit("    long sz = ftell(f);")
+        self.emit("    fseek(f, 0, SEEK_SET);")
+        self.emit("    if (sz < 0) { fclose(f); return \"\"; }")
+        self.emit("    char* buf = (char*)malloc(sz + 1);")
+        self.emit("    if (!buf) { fclose(f); return \"\"; }")
+        self.emit("    size_t read_bytes = fread(buf, 1, sz, f);")
+        self.emit("    buf[read_bytes] = '\\0';")
+        self.emit("    fclose(f);")
+        self.emit("    return buf;")
+        self.emit("}")
+        self.emit("")
+        self.emit("static inline int zf_fs_write_text(const char* path, const char* content) {")
+        self.emit("    if (!path) return 0;")
+        self.emit("    if (!content) content = \"\";")
+        self.emit("    FILE* f = fopen(path, \"wb\");")
+        self.emit("    if (!f) return 0;")
+        self.emit("    fputs(content, f);")
+        self.emit("    fclose(f);")
+        self.emit("    return 1;")
+        self.emit("}")
+        self.emit("")
+        self.emit("static inline int zf_fs_append_text(const char* path, const char* content) {")
+        self.emit("    if (!path) return 0;")
+        self.emit("    if (!content) content = \"\";")
+        self.emit("    FILE* f = fopen(path, \"ab\");")
+        self.emit("    if (!f) return 0;")
+        self.emit("    fputs(content, f);")
+        self.emit("    fclose(f);")
+        self.emit("    return 1;")
+        self.emit("}")
+        self.emit("")
+        self.emit("static inline int zf_fs_exists(const char* path) {")
+        self.emit("    if (!path) return 0;")
+        self.emit("    FILE* f = fopen(path, \"rb\");")
+        self.emit("    if (f) { fclose(f); return 1; }")
+        self.emit("    return 0;")
+        self.emit("}")
+        self.emit("")
+        self.emit("static inline int zf_fs_remove(const char* path) {")
+        self.emit("    if (!path) return 0;")
+        self.emit("    return remove(path) == 0;")
+        self.emit("}")
+        self.emit("")
+        self.emit("// ─── Matematika (Math) C Runtime ───")
+        self.emit("static inline double zf_math_sqrt(double x) { return sqrt(x); }")
+        self.emit("static inline double zf_math_abs(double x) { return fabs(x); }")
+        self.emit("static inline double zf_math_floor(double x) { return floor(x); }")
+        self.emit("static inline double zf_math_ceil(double x) { return ceil(x); }")
+        self.emit("static inline double zf_math_round(double x) { return round(x); }")
+        self.emit("static inline double zf_math_sin(double x) { return sin(x); }")
+        self.emit("static inline double zf_math_cos(double x) { return cos(x); }")
+        self.emit("")
 
         # 3. Structlarni chiqarish
         structs = [s for s in program.body if isinstance(s, StructDef)]
@@ -1020,6 +1078,23 @@ class Transpiler:
                 return f"zf_list_get({obj_c}, 0)"
             if member == 'last':
                 return f"zf_list_get({obj_c}, zf_list_len({obj_c}) - 1)"
+            if isinstance(obj, Identifier) and obj.name in ('fs', 'std_fs'):
+                if member == 'read_text' and node.args:
+                    return f"zf_fs_read_text({self.transpile_expr(node.args[0])})"
+                if member == 'write_text' and len(node.args) >= 2:
+                    return f"zf_fs_write_text({self.transpile_expr(node.args[0])}, {self.transpile_expr(node.args[1])})"
+                if member == 'append_text' and len(node.args) >= 2:
+                    return f"zf_fs_append_text({self.transpile_expr(node.args[0])}, {self.transpile_expr(node.args[1])})"
+                if member == 'exists' and node.args:
+                    return f"zf_fs_exists({self.transpile_expr(node.args[0])})"
+                if member == 'remove' and node.args:
+                    return f"zf_fs_remove({self.transpile_expr(node.args[0])})"
+            if isinstance(obj, Identifier) and obj.name in ('math', 'std_math'):
+                if member in ('sqrt', 'abs', 'floor', 'ceil', 'round', 'sin', 'cos') and node.args:
+                    fn_c = 'fabs' if member == 'abs' else member
+                    return f"{fn_c}({self.transpile_expr(node.args[0])})"
+                if member == 'pow' and len(node.args) >= 2:
+                    return f"pow({self.transpile_expr(node.args[0])}, {self.transpile_expr(node.args[1])})"
 
         if isinstance(node.callee, Identifier):
             name = node.callee.name

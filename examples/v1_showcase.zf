@@ -1,0 +1,247 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  🔷 ZAFIRA v1.0.0 GRAND RELEASE — FLAGMAN SHOWCASE LOYIHASI 🔷
+//  Fayl: examples/v1_showcase.zf
+//  Muallif: Jasper (Javohirbek Asqarov) & Antigravity
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import std.crypto
+import std.regex
+import std.fs
+import std.ai
+import std.datetime
+import std.env
+import std.json
+import std.math
+import std.string
+import std.list
+
+print("╔═════════════════════════════════════════════════════════════════════╗")
+print("║         🔷 ZAFIRA v1.0.0 GRAND RELEASE FLAGMAN SHOWCASE 🔷          ║")
+print("║              Silicon-Native & Dual-Mode Dasturlash Tili             ║")
+print("╚═════════════════════════════════════════════════════════════════════╝")
+
+// ─────────────────────────────────────────────────────────────────────
+// 1. TIZIM VA MUHIT MA'LUMOTLARI (std.env & std.datetime)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[1] Tizim va Muhit Ma'lumotlari (std.env & std.datetime):")
+let joriy_os = env.os()
+let ishchi_katalog = env.cwd()
+let hozirgi_vaqt = datetime.now()
+
+print("  • Operatsion Tizim: " + joriy_os)
+print("  • Joriy Katalog:    " + ishchi_katalog)
+print("  • Sana va Vaqt:     " + hozirgi_vaqt.iso)
+
+// ─────────────────────────────────────────────────────────────────────
+// 2. SEAL FUNKSIYA VA FORMAL INVARIANTLAR (where)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[2] Dual-Mode Seal Funksiya va Formal Invariant (where):")
+
+seal fn xavfsiz_komissiya(summa: Int, stavka: Float) -> Float
+    where summa > 0 and stavka >= 0.0
+{
+    return (summa * stavka) / 100.0
+}
+
+let tolov_summasi = 500000
+let komissiya = xavfsiz_komissiya(tolov_summasi, 1.5)
+print("  • Asosiy summa:      " + String(tolov_summasi) + " UZS")
+print("  • Komissiya (1.5%):  " + String(komissiya) + " UZS")
+
+// ─────────────────────────────────────────────────────────────────────
+// 3. KRIPTOGRAFIYA VA XAVFSIZLIK (std.crypto)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[3] Kriptografik Xavfsizlik (std.crypto: UUID, SHA-256, HMAC):")
+
+let tranzaksiya_id = crypto.uuid()
+let audit_xom_matn = "TX:" + tranzaksiya_id + "|SUMMA:" + String(tolov_summasi) + "|STATUS:KUTILMOQDA"
+let sha256_xesh = crypto.sha256(audit_xom_matn)
+let maxfiy_kalit = "zafira_secret_key_2026"
+let hmac_imzo = crypto.hmac_sha256(maxfiy_kalit, audit_xom_matn)
+
+print("  • Yangi UUID v4:    " + tranzaksiya_id)
+print("  • SHA-256 Digest:   " + sha256_xesh)
+print("  • HMAC-SHA256 Imzo: " + hmac_imzo)
+
+// ─────────────────────────────────────────────────────────────────────
+// 4. REGULAR IFODALAR (std.regex)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[4] Regular Ifodalar Tekshiruvi (std.regex: test, find, replace):")
+
+let email_namuna = "jasper@zafira.dev"
+let email_qoidasi = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+let email_togri = regex.test(email_qoidasi, email_namuna)
+
+let log_qator = "AuditID: [78412] - Avtorizatsiya muvaffaqiyatli yakunlandi"
+let topilgan_id = regex.find("\\d+", log_qator)
+let yashirilgan_log = regex.replace("\\d+", "*****", log_qator)
+
+print("  • Email: '" + email_namuna + "' to'g'rimi: " + String(email_togri))
+print("  • Matndan topilgan ID: " + String(topilgan_id))
+print("  • Niqoblangan log: " + yashirilgan_log)
+
+// ─────────────────────────────────────────────────────────────────────
+// 5. MA'LUMOT TUZILMALARI VA METODLAR (struct, impl, self)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[5] Ma'lumot Tuzilmalari va Metodlar (struct & impl):")
+
+struct Tranzaksiya {
+    id: String,
+    mijoz: String,
+    summa: Int,
+    holat: String
+}
+
+impl Tranzaksiya {
+    fn info(self) {
+        return "ID: " + self.id + " | Mijoz: " + self.mijoz + " | Summa: " + String(self.summa) + " UZS | Holat: " + self.holat
+    }
+
+    fn tasdiqla(self) {
+        self.holat = "TASDIQLANDI"
+        return self.holat
+    }
+
+    fn bekor_qil(self) {
+        self.holat = "BEKOR_QILINDI"
+        return self.holat
+    }
+}
+
+let tx = Tranzaksiya(tranzaksiya_id, "Javohirbek Asqarov", tolov_summasi, "KUTILMOQDA")
+print("  • Boshlang'ich holat: " + tx.info())
+
+tx.tasdiqla()
+print("  • Yangilangan holat:  " + tx.info())
+
+// ─────────────────────────────────────────────────────────────────────
+// 6. PATTERN MATCHING (match =>)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[6] Pattern Matching (match => oraliqlar va wildcard):")
+
+let mijoz_darajasi = match tx.summa {
+    1000000..100000000 => "VIP Platinum",
+    300000..1000000   => "Gold Mijoz",
+    100000..300000    => "Silver Mijoz",
+    _                 => "Standart Mijoz"
+}
+
+let holat_xabari = match tx.holat {
+    "TASDIQLANDI"   => "Tranzaksiya muvaffaqiyatli tasdiqlangan va o'tkazilgan",
+    "BEKOR_QILINDI" => "Tranzaksiya foydalanuvchi tomonidan bekor qilingan",
+    "KUTILMOQDA"    => "Tranzaksiya qabul qilinishini kutmoqda",
+    _               => "Noma'lum status"
+}
+
+print("  • Tranzaksiya darajasi: " + mijoz_darajasi)
+print("  • Holat sharhi:        " + holat_xabari)
+
+// ─────────────────────────────────────────────────────────────────────
+// 7. XATOLIKLARNI BOSHQARISH (try / catch / finally)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[7] Xatoliklarni Boshqarish (try / catch / throw / finally):")
+
+try {
+    print("  • Try bloki: Xavfsiz hisoblash amali bajarilmoqda...")
+    if tx.summa <= 0 {
+        throw "Tranzaksiya summasi musbat bo'lishi shart!"
+    }
+    print("  • Tekshiruv muvaffaqiyatli: summa qonuniy")
+} catch (xatolik) {
+    print("  • Catch bloki: Xatolik ushlandi -> " + xatolik)
+} finally {
+    print("  • Finally bloki: Tranzaksiya kassa auditi muvaffaqiyatli yopildi")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 8. FAYLLAR TIZIMI (std.fs)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[8] Fayllar Tizimi Boshqaruvi (std.fs: write, read, size, remove):")
+
+let audit_fayl = "v1_showcase_audit.txt"
+let yoziladigan_matn = "ZAFIRA v1.0.0 AUDIT LOG\n" + tx.info() + "\nHASH: " + sha256_xesh + "\n"
+
+fs.write_text(audit_fayl, yoziladigan_matn)
+let fayl_mavjud = fs.exists(audit_fayl)
+let fayl_hajmi = fs.file_size(audit_fayl)
+let oqilgan_matn = fs.read_text(audit_fayl)
+
+print("  • Fayl yaratildi:  " + audit_fayl + " (Mavjud: " + String(fayl_mavjud) + ")")
+print("  • Fayl hajmi:      " + String(fayl_hajmi) + " bayt")
+print("  • Fayldan o'qildi: " + string.trim(string.split(oqilgan_matn, "\n")[0]))
+
+// Faylni tozalash (ish maydoni gigiyenasi):
+fs.remove(audit_fayl)
+print("  • Fayl o'chirildi (toza holat): Mavjudmi: " + String(fs.exists(audit_fayl)))
+
+// ─────────────────────────────────────────────────────────────────────
+// 9. SILICON AI & TENZOR DVIGATELI (std.ai & run @auto)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[9] Silicon AI & Tenzor Dvigateli (std.ai & run @auto bloki):")
+
+run @auto {
+    let faol_apparat = ai.device()
+    print("  • Faol hisoblash apparati: " + faol_apparat)
+
+    // 1D Tenzorlar (Vektorlar)
+    let v1 = ai.tensor([0.2, 0.4, 0.6, 0.8])
+    let v2 = ai.tensor([0.1, 0.3, 0.5, 0.7])
+    let skalyar_kopaytma = v1.dot(v2)
+    print("  • Tenzor v1 shakli (shape): " + String(v1.shape))
+    print("  • Skalyar ko'paytma (dot):  " + String(skalyar_kopaytma))
+
+    // Semantik matnlar o'xshashligi (Cosine similarity)
+    let matn_a = "Zafira yuqori tezlikdagi dasturlash tili"
+    let matn_b = "Zafira yuqori tezlikdagi dasturlash tili"
+    let matn_c = "Bugun ob-havo ochiq va quyoshli"
+
+    let emb_a = ai.embedding_mock(matn_a)
+    let emb_b = ai.embedding_mock(matn_b)
+    let emb_c = ai.embedding_mock(matn_c)
+
+    let sim_bir_xil = ai.similarity(emb_a, emb_b)
+    let sim_farqli = ai.similarity(emb_a, emb_c)
+
+    print("  • Kosinus o'xshashlik (bir xil matnlar): " + String(sim_bir_xil))
+    print("  • Kosinus o'xshashlik (har xil matnlar):  " + String(sim_farqli))
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 10. ASINXRON DASTURLASH (async fn & await)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[10] Asinxron Vazifalar va Parallel Ijro (async / await):")
+
+async fn tarmoq_servisini_tekshir(servis_nomi, port) {
+    datetime.sleep_ms(25)
+    return servis_nomi + " (" + String(port) + "-port) -> 100% HEALTHY"
+}
+
+// Parallel vazifalar
+let vazifa_api = tarmoq_servisini_tekshir("Billing Gateway", 8080)
+let vazifa_db = tarmoq_servisini_tekshir("PostgreSQL Cluster", 5432)
+let vazifa_ai = tarmoq_servisini_tekshir("AI Tensor Core", 9000)
+
+let res_api = await vazifa_api
+let res_db = await vazifa_db
+let res_ai = await vazifa_ai
+
+print("  • " + res_api)
+print("  • " + res_db)
+print("  • " + res_ai)
+
+// ─────────────────────────────────────────────────────────────────────
+// 11. JSON VA RO'YXATLAR MANIPULYATSIYASI (std.json & std.list)
+// ─────────────────────────────────────────────────────────────────────
+print("\n[11] JSON va Ro'yxatlar Manipulyatsiyasi (std.json & std.list):")
+
+let audit_malumot = json.parse("{\"loyiha\": \"Zafira\", \"versiya\": \"1.0.0\", \"status\": \"Grand Release\", \"tayyor\": true}")
+print("  • Loyiha: " + audit_malumot.loyiha + " v" + audit_malumot.versiya + " [" + audit_malumot.status + "]")
+
+let modullar_royxati = ["crypto", "regex", "fs", "ai", "datetime", "env", "json", "math", "net", "list", "string", "ffi"]
+let saralangan_modullar = list.sort(modullar_royxati)
+print("  • Faol modullar soni: " + String(saralangan_modullar.len) + " ta")
+print("  • Birinchi 3 ta modul: " + saralangan_modullar[0] + ", " + saralangan_modullar[1] + ", " + saralangan_modullar[2])
+
+print("\n" + string.repeat("═", 71))
+print(" 🎉 ZAFIRA v1.0.0 GRAND RELEASE FLAGMAN SHOWCASE 100% MUVAFFAQIShLI! 🎉")
+print(string.repeat("═", 71) + "\n")

@@ -4,6 +4,7 @@ AST daraxtini bevosita bajaradi.
 """
 
 import os
+import json
 import concurrent.futures
 import asyncio
 import time
@@ -254,6 +255,7 @@ BUILTINS = {
     'Int': _builtin_int,
     'Float': _builtin_float,
     'String': _builtin_str,
+    'str': _builtin_str,
     'sleep': _builtin_sleep,
     'assert': _builtin_assert,
 }
@@ -597,6 +599,70 @@ class Interpreter:
             or not path.startswith(('py.', 'std.', 'sys.'))
         )
 
+    def _find_in_zafira_modules(self, start_dir: str, import_path: str) -> Optional[str]:
+        """
+        start_dir va uning ota papkalarida 'zafira_modules/' ichidan import_path ni qidiradi.
+        Tartib:
+        1. zafira_modules/<import_path> to'g'ridan-to'g'ri fayl bo'lsa
+        2. zafira_modules/<import_path>.zf
+        3. zafira_modules/<import_path>/zafira.json (manifest 'entry' kaliti)
+        4. zafira_modules/<import_path>/src/main.zf
+        5. zafira_modules/<import_path>/index.zf
+        6. zafira_modules/<import_path>/src/index.zf
+        7. zafira_modules/<import_path>/main.zf
+        """
+        curr = os.path.abspath(start_dir)
+        visited = set()
+        while curr and curr not in visited:
+            visited.add(curr)
+            modules_dir = os.path.join(curr, "zafira_modules")
+            if os.path.isdir(modules_dir):
+                pkg_dir = os.path.join(modules_dir, import_path)
+                # 1. To'g'ridan-to'g'ri fayl bo'lsa
+                if os.path.isfile(pkg_dir):
+                    return os.path.abspath(pkg_dir)
+                if not pkg_dir.endswith('.zf'):
+                    candidate_zf = pkg_dir + '.zf'
+                    if os.path.isfile(candidate_zf):
+                        return os.path.abspath(candidate_zf)
+                # 2. Agar papka bo'lsa:
+                if os.path.isdir(pkg_dir):
+                    # a) zafira.json manifest entry
+                    manifest_path = os.path.join(pkg_dir, "zafira.json")
+                    if os.path.isfile(manifest_path):
+                        try:
+                            with open(manifest_path, "r", encoding="utf-8") as f:
+                                manifest_data = json.load(f)
+                            entry_rel = manifest_data.get("entry")
+                            if entry_rel:
+                                entry_file = os.path.normpath(os.path.join(pkg_dir, entry_rel))
+                                if os.path.isfile(entry_file):
+                                    return os.path.abspath(entry_file)
+                        except Exception:
+                            pass
+                    # b) src/main.zf
+                    cand_src_main = os.path.join(pkg_dir, "src", "main.zf")
+                    if os.path.isfile(cand_src_main):
+                        return os.path.abspath(cand_src_main)
+                    # c) index.zf
+                    cand_index = os.path.join(pkg_dir, "index.zf")
+                    if os.path.isfile(cand_index):
+                        return os.path.abspath(cand_index)
+                    # d) src/index.zf
+                    cand_src_index = os.path.join(pkg_dir, "src", "index.zf")
+                    if os.path.isfile(cand_src_index):
+                        return os.path.abspath(cand_src_index)
+                    # e) main.zf
+                    cand_main = os.path.join(pkg_dir, "main.zf")
+                    if os.path.isfile(cand_main):
+                        return os.path.abspath(cand_main)
+
+            parent = os.path.dirname(curr)
+            if parent == curr:
+                break
+            curr = parent
+        return None
+
     def _resolve_module_path(self, import_path: str) -> str:
         if self._file_stack:
             base_dir = os.path.dirname(os.path.abspath(self._file_stack[-1]))
@@ -605,7 +671,7 @@ class Interpreter:
         else:
             base_dir = os.getcwd()
 
-        # 1. base_dir ga nisbatan qidirish
+        # 1. base_dir ga nisbatan qidirish (lokal fayllar)
         candidate = os.path.normpath(os.path.join(base_dir, import_path))
         if os.path.isfile(candidate):
             return os.path.abspath(candidate)
@@ -614,7 +680,7 @@ class Interpreter:
             if os.path.isfile(candidate_zf):
                 return os.path.abspath(candidate_zf)
 
-        # 2. CWD ga nisbatan qidirish (fallback)
+        # 2. CWD ga nisbatan qidirish (lokal fayllar fallback)
         cwd_candidate = os.path.normpath(os.path.join(os.getcwd(), import_path))
         if os.path.isfile(cwd_candidate):
             return os.path.abspath(cwd_candidate)
@@ -622,6 +688,16 @@ class Interpreter:
             cwd_candidate_zf = cwd_candidate + '.zf'
             if os.path.isfile(cwd_candidate_zf):
                 return os.path.abspath(cwd_candidate_zf)
+
+        # 3. zafira_modules/ qidirish (base_dir va uning ota papkalaridan)
+        mod_candidate = self._find_in_zafira_modules(base_dir, import_path)
+        if mod_candidate:
+            return mod_candidate
+
+        # 4. zafira_modules/ qidirish (CWD va uning ota papkalaridan fallback)
+        cwd_mod_candidate = self._find_in_zafira_modules(os.getcwd(), import_path)
+        if cwd_mod_candidate:
+            return cwd_mod_candidate
 
         raise ZafiraError(f"Modul fayli topilmadi: '{import_path}' (Qidirildi: {candidate})")
 
@@ -633,6 +709,20 @@ class Interpreter:
             module_name = base_name[:-3]
         else:
             module_name = os.path.splitext(base_name)[0]
+
+        # Agar modul zafira_modules ichidan yuklangan bo'lsa:
+        norm_parts = os.path.normpath(resolved_path).split(os.sep)
+        if 'zafira_modules' in norm_parts:
+            idx = norm_parts.index('zafira_modules')
+            if idx + 1 < len(norm_parts):
+                pkg_folder_name = norm_parts[idx + 1].replace('-', '_')
+                cleaned = node.path.strip('./\\')
+                if ('/' not in cleaned and '\\' not in cleaned and not cleaned.endswith('.zf')) or module_name in ('main', 'index'):
+                    module_name = pkg_folder_name
+        elif module_name in ('main', 'index'):
+            cleaned_node_path = node.path.strip('./\\')
+            if cleaned_node_path and '/' not in cleaned_node_path and '\\' not in cleaned_node_path and not cleaned_node_path.endswith('.zf'):
+                module_name = cleaned_node_path.replace('-', '_')
 
         bind_name = getattr(node, 'alias', None) or module_name
 

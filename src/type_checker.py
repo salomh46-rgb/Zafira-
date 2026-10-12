@@ -251,6 +251,7 @@ def create_root_env() -> TypeEnvironment:
     env.declare_function('Int', [('val', 'Any')], return_type='Int', mode='draft')
     env.declare_function('Float', [('val', 'Any')], return_type='Float', mode='draft')
     env.declare_function('String', [('val', 'Any')], return_type='String', mode='draft')
+    env.declare_function('str', [('val', 'Any')], return_type='String', mode='draft')
     env.declare_function('sleep', [('secs', 'Any')], return_type='Null', mode='draft')
     env.declare_function('assert', [('cond', 'Any'), ('msg', 'Any')], return_type='Bool', mode='draft')
     return env
@@ -578,6 +579,11 @@ class TypeChecker:
                 if base_name.endswith('.zf'):
                     base_name = base_name[:-3]
                 target_name = os.path.splitext(base_name)[0]
+                if target_name in ('main', 'index'):
+                    cleaned_node_path = node.path.strip('./\\')
+                    if cleaned_node_path and '/' not in cleaned_node_path and '\\' not in cleaned_node_path:
+                        target_name = cleaned_node_path.replace('-', '_')
+                target_name = target_name.replace('-', '_')
             env.declare(target_name, type_name='Any', is_const=True)
 
             # Agar fayl mavjud bo'lsa, undagi structlarni ham ro'yxatdan o'tkazamiz
@@ -588,6 +594,20 @@ class TypeChecker:
                 target_file = candidate
             elif not candidate.endswith('.zf') and os.path.isfile(candidate + '.zf'):
                 target_file = candidate + '.zf'
+
+            if not target_file:
+                curr = base_dir
+                while curr:
+                    modules_dir = os.path.join(curr, "zafira_modules")
+                    if os.path.isdir(modules_dir):
+                        for sub in (node.path, node.path + ".zf", os.path.join(node.path, "src", "main.zf"), os.path.join(node.path, "index.zf"), os.path.join(node.path, "main.zf")):
+                            cand = os.path.normpath(os.path.join(modules_dir, sub))
+                            if os.path.isfile(cand):
+                                target_file = cand
+                                break
+                    if target_file or os.path.dirname(curr) == curr:
+                        break
+                    curr = os.path.dirname(curr)
 
             if target_file:
                 try:
