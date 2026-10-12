@@ -145,7 +145,20 @@ def _library_has_symbol(cdll: ctypes.CDLL, symbol_name: Any) -> bool:
         cdll[symbol_name]
         return True
     except (AttributeError, KeyError, IndexError, ValueError, TypeError):
-        return False
+        pass
+
+    # Linux/POSIX libm tekshiruvi (matematik funksiyalar uchun)
+    if symbol_name in ("sqrt", "pow", "sin", "cos", "tan", "floor", "ceil", "log", "exp"):
+        try:
+            libm = _load_cdll("m")
+            if hasattr(libm, symbol_name):
+                return True
+            libm[symbol_name]
+            return True
+        except Exception:
+            pass
+
+    return False
 
 
 def _call_library_function(
@@ -162,18 +175,26 @@ def _call_library_function(
         )
 
     # Funksiyani olish
+    c_func = None
     try:
         c_func = getattr(cdll, func_name)
     except AttributeError:
         try:
             c_func = cdll[func_name]
         except Exception:
-            raise ZafiraError(
-                f"FFI xatosi: '{func_name}' funksiyasi '{lib_name}' kutubxonasida topilmadi"
-            )
-    except Exception as e:
+            pass
+
+    # Linux/POSIX tizimlarida sqrt, pow, sin, cos kabi matematik funksiyalar libc da emas, libm da joylashgan
+    if c_func is None and lib_name.lower() in ("libc", "c", "") and func_name in ("sqrt", "pow", "sin", "cos", "tan", "floor", "ceil", "log", "exp"):
+        try:
+            libm = _load_cdll("m")
+            c_func = getattr(libm, func_name, None) or libm[func_name]
+        except Exception:
+            pass
+
+    if c_func is None:
         raise ZafiraError(
-            f"FFI xatosi: '{func_name}' funksiyasini olishda xatolik: {e}"
+            f"FFI xatosi: '{func_name}' funksiyasi '{lib_name}' kutubxonasida topilmadi"
         )
 
     # Argumentlarni Zafira / Python turlaridan ajratib olish
