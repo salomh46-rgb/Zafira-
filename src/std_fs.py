@@ -10,12 +10,16 @@ from src.interpreter import ZafiraError, ZafiraList, _zf_str
 
 
 def _clean_path(path: Any, fn_name: str) -> str:
-    """Yo'l (path) satr bo'lishini tekshiradi va qaytaradi."""
+    """Yo'l (path) satr bo'lishini tekshiradi, normallashtiradi va xavfsizligini ta'minlaydi."""
     if path is None:
         raise ZafiraError(f"fs.{fn_name}() yo'li (path) null bo'lishi mumkin emas")
     if not isinstance(path, (str, os.PathLike)):
         raise ZafiraError(f"fs.{fn_name}() yo'li (path) satr (String) bo'lishi kerak, lekin '{type(path).__name__}' berildi")
-    return str(path)
+    p_str = str(path)
+    # Xavfsizlik: Bo'sh bayt (null byte) inyeksiyasiga qarshi himoya
+    if '\x00' in p_str:
+        raise ZafiraError(f"fs.{fn_name}() xavfsizlik xatosi: Yo'lda yaroqsiz null-byte mavjud")
+    return os.path.normpath(p_str)
 
 
 def _fs_read_text(path: Any) -> str:

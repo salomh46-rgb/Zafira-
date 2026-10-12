@@ -1,15 +1,78 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// sapphire_kv - Namuna Test 🔷
+// sapphire_kv - REST API & Server Test 🔷
 // Fayl: tests/test_main.zf
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+import std.net
+import std.json
+import "../src/store.zf" as store_mod
 
-let a = 10
-let b = 20
-let natija = a + b
+print("╔══════════════════════════════════════════════╗")
+print("║  REST API & HTTP TESTLARI                    ║")
+print("╚══════════════════════════════════════════════╝")
 
-if natija == 30 {
-    print("test_main muvaffaqiyatli o'tdi: a + b == 30")
-} else {
-    print("test_main xato!")
+let test_db = store_mod.Store(json.parse("{}"), 0, 0, 0, "test_api.aof")
+test_db.init("test_api.aof")
+
+fn test_handler(req) {
+    if req.path == "/ping" {
+        return "PONG"
+    }
+    if req.path == "/set" {
+        let b = req.body
+        let body_obj = b
+        try {
+            body_obj = json.parse(b)
+        } catch (e) {
+            body_obj = b
+        }
+        let k = body_obj["key"]
+        let v = body_obj["val"]
+        let ttl = 0.0
+        let ok = test_db.set(k, v, ttl)
+        let res = json.parse("{}")
+        res["saved"] = ok
+        return json.stringify(res)
+    }
+    if req.path == "/get" {
+        let q = req.query
+        let v = test_db.get(q["key"])
+        let res = json.parse("{}")
+        res["val"] = v
+        return json.stringify(res)
+    }
+    return "OK"
+}
+
+// Threaded fonda serverni ochamiz
+let srv = net.listen(6389, test_handler, null, true)
+
+// 1. PING testi
+let ping = net.get("http://127.0.0.1:6389/ping")
+if ping.body != "PONG" {
+    print("XATO: /ping PONG qaytarmadi: " + ping.body)
     1 / 0
 }
+print("  ✓ /ping -> PONG muvaffaqiyatli!")
+
+// 2. SET testi
+let p = json.parse("{}")
+p["key"] = "test:api"
+p["val"] = "ZafiraREST"
+let set_res = net.post("http://127.0.0.1:6389/set", p)
+if set_res.status != 200 {
+    print("XATO: /set status != 200")
+    1 / 0
+}
+print("  ✓ /set -> 200 OK!")
+
+// 3. GET testi
+let get_res = net.get("http://127.0.0.1:6389/get?key=test:api")
+let get_data = json.parse(get_res.body)
+if get_data["val"] != "ZafiraREST" {
+    print("XATO: /get qiymati mos kelmadi!")
+    1 / 0
+}
+print("  ✓ /get?key=test:api -> ZafiraREST muvaffaqiyatli!")
+
+net.close(srv)
+print("🎉 Barcha REST API testlari 100% muvaffaqiyatli o'tdi!\n")

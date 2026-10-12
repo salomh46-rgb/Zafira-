@@ -32,12 +32,16 @@ def _normalize_headers(headers: Optional[Any]) -> Dict[str, str]:
 
 def _get_ssl_context():
     try:
-        ctx = ssl._create_unverified_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        return ctx
+        # Standart xavfsiz SSL sertifikat tekshiruvi (MitM himoyasi)
+        return ssl.create_default_context()
     except Exception:
-        return None
+        try:
+            ctx = ssl._create_unverified_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            return ctx
+        except Exception:
+            return None
 
 
 def _net_get(url: Any, headers: Optional[Any] = None) -> ZafiraStruct:

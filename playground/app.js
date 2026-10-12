@@ -315,7 +315,8 @@ async function runCode() {
     const response = await fetch('/api/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: source })
+      body: JSON.stringify({ source: source }),
+      signal: AbortSignal.timeout(9000)
     });
 
     const elapsed = Math.round(performance.now() - startTime);
@@ -350,7 +351,7 @@ function displayResults(data, clientElapsed) {
     switchTab('output');
   } else {
     statusBanner.className = "output-banner success";
-    statusBanner.textContent = "Muvaffaqiyatli bajarildi (0 xato)";
+    statusBanner.textContent = "Muvaffaqiyatli bajarildi (Online Cloud Engine)";
     statusBanner.style.display = "block";
     outputConsole.textContent = data.stdout || "Dastur hech narsa chop etmadi (stdout bo'sh).";
     switchTab('output');
@@ -398,8 +399,8 @@ function fallbackClientExecution(source, elapsed) {
     output = "▶ Dastur muvaffaqiyatli kompilyatsiya qilindi.";
   }
 
-  statusBanner.className = "output-banner success";
-  statusBanner.textContent = "Muvaffaqiyatli bajarildi (Online Cloud Engine)";
+  statusBanner.className = "output-banner warning";
+  statusBanner.textContent = "⚠️ Oflayn Rejim (Mahalliy Simulyator)";
   statusBanner.style.display = "block";
   outputConsole.textContent = output;
 

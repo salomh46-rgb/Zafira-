@@ -158,16 +158,36 @@ class PythonInterop:
         'tensorflow': ['tf'],
     }
 
+    # Xavfsiz muhit (Web / Playground) uchun ruxsat etilgan xavfsiz hisoblash va ma'lumotlar kutubxonalari
+    SAFE_ALLOWED_MODULES = {
+        'math', 'random', 'cmath', 'statistics', 'decimal', 'fractions',
+        'json', 'csv', 're', 'datetime', 'time',
+        'numpy', 'pandas', 'scipy', 'sympy', 'torch', 'matplotlib', 'sklearn'
+    }
+
+    # Hech qachon xavfsiz muhitda chaqirib bo'lmaydigan xavfli modullar
+    DANGEROUS_MODULES = {
+        'os', 'sys', 'subprocess', 'shutil', 'socket', 'http', 'urllib',
+        'ctypes', 'importlib', 'pathlib', 'builtins', 'posix', 'nt',
+        'signal', 'threading', 'multiprocessing', 'pty', 'platform'
+    }
+
     @staticmethod
-    def import_module(path: str, env) -> bool:
+    def import_module(path: str, env, safe_mode: bool = False) -> bool:
         """
         Python modulini yuklab, Zafira muhitiga (Environment) o'rnatadi.
         path: 'py.torch', 'py.pandas', 'py.numpy', 'py.math' kabi
+        safe_mode: True bo'lsa xavfli modullar taqiqlanadi
         returns: Muvaffaqiyatli yuklansa True, aks holda False
         """
         # 'py.' prefiksini olib tashlaymiz
         mod_path = path[3:] if path.startswith('py.') else path
         root_name = mod_path.split('.')[0]
+
+        if safe_mode:
+            if root_name in PythonInterop.DANGEROUS_MODULES or root_name not in PythonInterop.SAFE_ALLOWED_MODULES:
+                from src.interpreter import ZafiraError
+                raise ZafiraError(f"Xavfsizlik cheklovi: '{path}' modulini xavfsiz (sandbox) rejimda yuklash taqiqlangan!")
 
         try:
             mod = importlib.import_module(mod_path)

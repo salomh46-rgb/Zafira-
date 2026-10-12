@@ -79,9 +79,10 @@ def format_ast_tree(node: Any, indent: int = 0) -> str:
     return f"{prefix}{node!r}\n"
 
 
-def execute_zafira_code(source: str, timeout_seconds: float = 8.0) -> Dict[str, Any]:
+def execute_zafira_code(source: str, timeout_seconds: float = 8.0, safe_mode: bool = True) -> Dict[str, Any]:
     """
     Zafira kodini tokenizatsiya, tahlil (parsing), tip tekshiruvi va ijro qiladi.
+    safe_mode=True bo'lsa xavfli modullar (py.os, std.fs, std.ffi, std.env, std.net) taqiqlanadi.
     Natijada: { stdout, error, ast, tokens, execution_time_ms, ... } qaytaradi.
     """
     import time
@@ -201,7 +202,7 @@ def execute_zafira_code(source: str, timeout_seconds: float = 8.0) -> Dict[str, 
         stderr_buf = io.StringIO()
         try:
             with contextlib.redirect_stdout(stdout_buf), contextlib.redirect_stderr(stderr_buf):
-                interpreter = Interpreter()
+                interpreter = Interpreter(safe_mode=safe_mode)
                 ret = interpreter.run(program)
                 exec_result["return"] = ret
             exec_result["stdout"] = stdout_buf.getvalue() + (stderr_buf.getvalue() or "")
@@ -314,18 +315,25 @@ class PlaygroundRequestHandler(http.server.BaseHTTPRequestHandler):
 
         if url_path == '/api/run':
             content_length = int(self.headers.get('Content-Length', 0))
+
+            # Xavfsizlik: DoS / OOM himoyasi (maksimal 64 KB so'rov hajmi)
+            if content_length > 64 * 1024:
+                self._set_headers(status=413, content_type="application/json; charset=utf-8")
+                self.wfile.write(json.dumps({"error": "So'rov hajmi juda katta (maksimal 64 KB)"}, ensure_ascii=False).encode('utf-8'))
+                return
+
             post_body = self.rfile.read(content_length).decode('utf-8', errors='replace')
 
-            # Kodni JSON yoki to'g'ridan-to'g'ri matndan olish
+            # Kodni JSON yoki to'g'ridan-to'g'ri matndan olish (source yoki code kaliti)
             code = ""
             try:
                 data = json.loads(post_body)
-                code = data.get("code", "")
+                code = data.get("source") or data.get("code") or ""
             except Exception:
                 code = post_body
 
-            # Kodni bajarish
-            result = execute_zafira_code(code)
+            # Kodni xavfsiz sandbox rejimida bajarish
+            result = execute_zafira_code(code, safe_mode=True)
 
             self._set_headers(status=200, content_type="application/json; charset=utf-8")
             self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))

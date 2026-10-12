@@ -35,3 +35,7 @@ examples/*.c
 # Maxfiy
 .env
 *.key
+
+# Ma'lumotlar bazasi va og'ir paketlar
+*.aof
+*.vsix

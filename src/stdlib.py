@@ -449,11 +449,19 @@ STDLIB_MODULES: Dict[str, ZafiraModule] = {
 
 
 
-def load_stdlib_module(path: str, env, alias: Optional[str] = None) -> None:
+# Xavfsiz sandbox muhitida bloklanadigan tizim modullari
+SAFE_BLOCKED_STDLIB = {'fs', 'ffi', 'env', 'net'}
+
+
+def load_stdlib_module(path: str, env, alias: Optional[str] = None, safe_mode: bool = False) -> None:
     parts = path.split('.')
     if len(parts) < 2:
         raise ZafiraError(f"Noto'g'ri modul yo'li: '{path}'")
     module_name = parts[1]  # 'std.math' -> 'math', 'std.ai' -> 'ai'
+
+    if safe_mode and module_name in SAFE_BLOCKED_STDLIB:
+        raise ZafiraError(f"Xavfsizlik cheklovi: '{path}' moduli xavfsiz (sandbox) muhitda taqiqlangan!")
+
     module = STDLIB_MODULES.get(module_name)
     if module is None:
         raise ZafiraError(f"'{path}' moduli topilmadi")

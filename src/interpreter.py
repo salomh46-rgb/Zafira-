@@ -264,8 +264,9 @@ BUILTINS = {
 # ─── INTERPRETER ───
 
 class Interpreter:
-    def __init__(self, current_file: Optional[str] = None):
+    def __init__(self, current_file: Optional[str] = None, safe_mode: bool = False):
         self.current_file = os.path.abspath(current_file) if current_file else None
+        self.safe_mode = safe_mode
         self._file_stack: List[str] = []
         self._module_cache: Dict[str, ZafiraStruct] = {}
         self.builtin_env = Environment()
@@ -771,13 +772,13 @@ class Interpreter:
     def _exec_ImportStatement(self, node, env):
         if node.path.startswith('py.'):
             from src.python_interop import PythonInterop
-            PythonInterop.import_module(node.path, env)
+            PythonInterop.import_module(node.path, env, safe_mode=getattr(self, 'safe_mode', False))
             if getattr(node, 'alias', None):
                 root_name = node.path[3:].split('.')[0]
                 env.set(node.alias, env.get(root_name))
         elif node.path.startswith('std.'):
             from src.stdlib import load_stdlib_module
-            load_stdlib_module(node.path, env, alias=getattr(node, 'alias', None))
+            load_stdlib_module(node.path, env, alias=getattr(node, 'alias', None), safe_mode=getattr(self, 'safe_mode', False))
         elif node.path == 'sys.io':
             if getattr(node, 'alias', None):
                 sys_struct = ZafiraStruct('sys.io', {'print': _builtin_print, 'input': _builtin_input})
