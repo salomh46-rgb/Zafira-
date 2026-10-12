@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/salomh46-rgb/Zafira-/releases"><img src="https://img.shields.io/badge/version-v0.6.0--alpha-0ea5e9.svg?style=for-the-badge&logo=codeforces" alt="Version"></a>
+  <a href="https://github.com/salomh46-rgb/Zafira-/releases"><img src="https://img.shields.io/badge/version-v0.7.0--alpha-0ea5e9.svg?style=for-the-badge&logo=codeforces" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/runtime-Python_3.11+-3776ab.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="#"><img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-0284c7.svg?style=for-the-badge" alt="Platform"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-172%2F172_Passing-10b981.svg?style=for-the-badge&logo=checkmarx" alt="Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-236%2F236_Passing-10b981.svg?style=for-the-badge&logo=checkmarx" alt="Tests"></a>
   <a href="vscode-zafira/INSTALL.md"><img src="https://img.shields.io/badge/VS_Code_Extension-v0.1.0-007acc.svg?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="VS Code"></a>
 </p>
 
@@ -38,6 +38,8 @@
 | **Formal invariantlar (`where`)** | ❌ Yo'q | ⚠️ Tashqi macro | ❌ Yo'q | **✅ Til darajasida statik tekshiriladi** |
 | **Asinxron Dasturlash (`async/await`)** | Alohida `asyncio` | `tokio` kerak | `std::coroutine` | **✅ Til yadrosida native `async`/`await`** |
 | **Xatoliklarni boshqarish** | try/except | Result<T, E> | try/catch | **✅ `try` / `catch` / `throw` / `finally`** |
+| **Struct Metodlari (`impl`)** | class | impl Struct | class / struct | **✅ `impl Struct { fn metod(self) }`** |
+| **Pattern Matching (`match =>`)** | match/case | match | switch | **✅ `match qiymat { 1 => ..., 3..10 => ..., _ => ... }`** |
 | **Ko'p faylli modullar** | import | mod / use | #include | **✅ `import "./modul.zf" as m` (Kesh va siklik himoya)** |
 | **Python Interop** | Asl til | ❌ Og'ir FFI | ❌ Og'ir C-API | **✅ `import py.torch` (Zero-Overhead)** |
 | **Hardware direktivalari** | Tashqi drayver | Cuda kutubxona | OpenCL/CUDA | **✅ `run @gpu`, `@npu`, `@auto`** |
@@ -45,27 +47,30 @@
 
 ### Versiyalar Bo'yicha Imkoniyatlar
 
-| Imkoniyat | v0.1 | v0.2 | v0.3 | v0.4 | v0.5 | v0.6 (Hozirgi) | v1.0 |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Lexer (50+ token, Izohlar)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Pratt Parsing & To'liq AST** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Tree-walking Interpreter & REPL** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **O'zgaruvchilar (`let`, `const`)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Dual-Mode (`fn` draft / seal)** | Boshlang'ich | Boshlang'ich | ✅ To'liq | ✅ | ✅ | ✅ | ✅ |
-| **Python Interop (`import py.*`)** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Statik Tip Tekshiruvi (Type Checker)** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **VS Code Sintaksis Kengaytmasi (.vsix)** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **C Transpiler & Standalone Binary (.exe)** | ❌ | ❌ | ✅ C99 | ✅ | ✅ Native | ✅ | ✅ |
-| **Standart kutubxona (`math`, `string`, `list`, `io`)**| ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Paket Menejeri (`zpm`: init, run, test, build)** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **AI & Tensor Dvigateli (`std.ai`, @gpu)** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **Web & Network (`std.net`, `std.json`, HTTP Server)** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **Asinxron Dasturlash (`async fn`, `await`)** | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Web Interactive Playground (Online Studio)** | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Xatoliklarni boshqarish (`try/catch/throw/finally`)** | ❌ | ❌ | ❌ | ❌ | ❌ | **✅ v0.6** | ✅ |
-| **Fayllar Tizimi (`std.fs`: read, write, exists, copy)** | ❌ | ❌ | ❌ | ❌ | ❌ | **✅ v0.6** | ✅ |
-| **Ko'p faylli lokal modullar (`import "./fayl.zf"`)** | ❌ | ❌ | ❌ | ❌ | ❌ | **✅ v0.6** | ✅ |
-| **Struct Metodlari (`impl`) & Pattern Matching** | ❌ | ❌ | ❌ | ❌ | ❌ | ⏳ v0.7 | ✅ |
+| Imkoniyat | v0.1 | v0.2 | v0.3 | v0.4 | v0.5 | v0.6 | v0.7 (Hozirgi) | v1.0 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Lexer (50+ token, Izohlar)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Pratt Parsing & To'liq AST** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Tree-walking Interpreter & REPL** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **O'zgaruvchilar (`let`, `const`)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Dual-Mode (`fn` draft / seal)** | Boshlang'ich | Boshlang'ich | ✅ To'liq | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Python Interop (`import py.*`)** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Statik Tip Tekshiruvi (Type Checker)** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **VS Code Sintaksis Kengaytmasi (.vsix)** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **C Transpiler & Standalone Binary (.exe)** | ❌ | ❌ | ✅ C99 | ✅ | ✅ Native | ✅ | ✅ | ✅ |
+| **Standart kutubxona (`fs`, `math`, `string`, `list`, `io`)**| ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Paket Menejeri (`zpm`: init, run, test, build)** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **AI & Tensor Dvigateli (`std.ai`, @gpu)** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Web & Network (`std.net`, `std.json`, HTTP Server)** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Asinxron Dasturlash (`async fn`, `await`)** | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Web Interactive Playground (Online Studio)** | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Xatoliklarni boshqarish (`try/catch/throw/finally`)** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **Fayllar Tizimi (`std.fs`: read, write, exists, copy)** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **Ko'p faylli lokal modullar (`import "./fayl.zf"`)** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **Struct Metodlari (`impl Struct { fn m(self) }`)** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **✅ v0.7** | ✅ |
+| **Pattern Matching (`match { 1 => ..., _ => ... }`)** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **✅ v0.7** | ✅ |
+| **Muhit va Sana/Vaqt (`std.env`, `std.datetime`)** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | **✅ v0.7** | ✅ |
+| **Kriptografiya & Regex (`std.crypto`, `std.regex`)** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ⏳ v0.8 | ✅ |
 
 ---
 

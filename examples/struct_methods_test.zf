@@ -1,0 +1,90 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ZAFIRA TILI - Struct Metodlari (impl va self) 🔷
+//  Fayl: examples/struct_methods_test.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 1. Struct e'lon qilish
+struct Odam {
+    ism: String,
+    yosh: Int,
+    shahar: String
+}
+
+// 2. Struct metodlarini impl orqali biriktirish
+impl Odam {
+    // self maydonlarini o'qish
+    fn salom(self) {
+        return "Salom, mening ismim " + self.ism + ", yoshim " + String(self.yosh) + " da."
+    }
+
+    // self maydonini o'zgartirish va yangilangan qiymatni qaytarish
+    fn yosh_oshir(self, yil: Int) {
+        self.yosh = self.yosh + yil
+        return self.yosh
+    }
+
+    // Shaharni o'zgartirish
+    fn shahar_koch(self, yangi_shahar: String) {
+        self.shahar = yangi_shahar
+        return self.shahar
+    }
+
+    // Ichki metod chaqiruvi
+    fn toliq_malumot(self) {
+        return self.salom() + " Hozirda " + self.shahar + "da yashayman."
+    }
+}
+
+// 3. Bank hisobi structi (mablag' boshqaruvi)
+struct BankHisob {
+    egasi: String,
+    balans: Int
+}
+
+impl BankHisob {
+    fn depozit(self, summa: Int) {
+        self.balans = self.balans + summa
+        return self.balans
+    }
+
+    fn yechish(self, summa: Int) {
+        if self.balans >= summa {
+            self.balans = self.balans - summa
+            return self.balans
+        }
+        return -1
+    }
+
+    fn hisobot(self) {
+        return self.egasi + " balansi: " + String(self.balans) + " UZS"
+    }
+}
+
+// ─── AMALDA SINASH ───
+
+print("=== 1. Odam structi va metodlari ===")
+let jasper = Odam("Jasper", 25, "Toshkent")
+print(jasper.salom())
+
+print("\n1 yil o'tgach:")
+let yangi_yosh = jasper.yosh_oshir(1)
+print("Yangi yosh: " + String(yangi_yosh))
+print("Obyekt maydoni tekshiruvi: " + String(jasper.yosh))
+
+print("\nShaharni o'zgartirish:")
+jasper.shahar_koch("Samarqand")
+print(jasper.toliq_malumot())
+
+print("\n=== 2. BankHisob structi va metodlari ===")
+let hisob = BankHisob("Javohirbek", 100000)
+print(hisob.hisobot())
+
+print("Depozit qo'shish (50000):")
+hisob.depozit(50000)
+print(hisob.hisobot())
+
+print("Pul yechish (30000):")
+hisob.yechish(30000)
+print(hisob.hisobot())
+
+print("\n[Muvaffaqiyatli] Barcha struct metodlari bekamu-ko'st ishladi!")

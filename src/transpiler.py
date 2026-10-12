@@ -18,7 +18,7 @@ from src.parser import (
     Identifier, BinaryOp, UnaryOp, FunctionCall, MemberAccess, IndexAccess,
     ListLiteral, RangeExpr, LetStatement, ConstStatement, AssignStatement,
     ReturnStatement, IfStatement, WhileStatement, ForStatement, FunctionDef,
-    StructDef, ImportStatement, RunBlock, ExprStatement, Block, AwaitExpr
+    StructDef, ImplBlock, ImportStatement, RunBlock, ExprStatement, Block, AwaitExpr
 )
 
 
@@ -595,7 +595,7 @@ class Transpiler:
 
         # 4. Funksiyalar va top-level statementlarni ajratish
         functions = [s for s in program.body if isinstance(s, FunctionDef)]
-        top_stmts = [s for s in program.body if not isinstance(s, (StructDef, FunctionDef, ImportStatement))]
+        top_stmts = [s for s in program.body if not isinstance(s, (StructDef, ImplBlock, FunctionDef, ImportStatement))]
 
         # 5. Forward declarations (prototiplar)
         if functions:

@@ -1,0 +1,76 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ZAFIRA TILI - Muhit va Sana/Vaqt (std.env & std.datetime) Namunasi
+//  Fayl: env_datetime_test.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import std.env
+import std.datetime
+
+print("==================================================")
+print("   ZAFIRA MUHIT VA SANA/VAQT MODULLARI SINOVI     ")
+print("==================================================")
+
+// ─── 1. STD.ENV SINOVI ───
+print("\n>>> 1. STD.ENV (Muhit O'zgaruvchilari va Tizim) <<<")
+
+// 1.1 OS va joriy ishchi katalog
+let tizim = env.os()
+let katalog = env.cwd()
+print("Operatsion tizim: " + tizim)
+print("Joriy katalog: " + katalog)
+
+// 1.2 CLI argumentlar
+let argumentlar = env.args()
+print("CLI argumentlar soni: " + String(argumentlar.len))
+
+// 1.3 Muhit o'zgaruvchisi o'rnatish va tekshirish
+print("\nYangi muhit o'zgaruvchisi o'rnatilmoqda: APP_MODE=production")
+env.set("APP_MODE", "production")
+let mavjud = env.has("APP_MODE")
+print("APP_MODE mavjudmi: " + String(mavjud))
+
+let qiymat = env.get("APP_MODE", "mavjud_emas")
+print("APP_MODE qiymati: " + String(qiymat))
+
+// 1.4 Mavjud bo'lmagan o'zgaruvchi va default qiymat
+let noma_lum = env.get("NON_EXISTING_ZAFIRA_VAR", "standart_qiymat")
+print("Topilmagan o'zgaruvchi (default bilan): " + String(noma_lum))
+
+// 1.5 O'zgaruvchini o'chirish
+print("\nAPP_MODE o'chirilmoqda...")
+env.remove("APP_MODE")
+let keyin_mavjud = env.has("APP_MODE")
+print("O'chirilgandan so'ng mavjudmi: " + String(keyin_mavjud))
+
+// ─── 2. STD.DATETIME SINOVI ───
+print("\n>>> 2. STD.DATETIME (Sana va Vaqt) <<<")
+
+// 2.1 Joriy sana va vaqt (DateTime struktura)
+let vaqt = datetime.now()
+print("Yil:    " + String(vaqt.year))
+print("Oy:     " + String(vaqt.month))
+print("Kun:    " + String(vaqt.day))
+print("Soat:   " + String(vaqt.hour))
+print("Daqiqa: " + String(vaqt.minute))
+print("Soniya: " + String(vaqt.second))
+print("ISO format: " + vaqt.iso)
+
+// 2.2 Unix timestamp
+let ts = datetime.timestamp()
+print("\nUnix timestamp (soniyalarda): " + String(ts))
+
+// 2.3 Sana/vaqtni formatlash
+let sana_format = datetime.format(null, "%Y-%m-%d %H:%M:%S")
+print("Joriy vaqt formatlangan: " + sana_format)
+
+let sana_qisqa = datetime.format(ts, "%Y/%m/%d")
+print("Timestamp formatlangan:  " + sana_qisqa)
+
+// 2.4 Kechiktirish (sleep_ms)
+print("\n50 millisoniya kutish (sleep_ms)...")
+datetime.sleep_ms(50)
+print("Kutish muvaffaqiyatli yakunlandi!")
+
+print("\n==================================================")
+print("  STD.ENV VA STD.DATETIME SINOVI TUGADI (100% OK) ")
+print("==================================================")

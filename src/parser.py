@@ -75,6 +75,22 @@ class RangeExpr(Node):
 class AwaitExpr(Node):
     expr: Node
 
+@dataclass
+class Wildcard(Identifier):
+    name: str = "_"
+    def __init__(self, name: str = "_"):
+        self.name = name
+
+@dataclass
+class MatchArm(Node):
+    pattern: Node
+    body: Node
+
+@dataclass
+class MatchExpr(Node):
+    expr: Node
+    arms: List[MatchArm]
+
 # --- Operatorlar (Statements) ---
 @dataclass
 class LetStatement(Node):
@@ -132,6 +148,11 @@ class FunctionDef(Node):
 class StructDef(Node):
     name: str
     fields: List[tuple]        # (ism, tip)
+
+@dataclass
+class ImplBlock(Node):
+    struct_name: str
+    methods: List[FunctionDef]
 
 @dataclass
 class ImportStatement(Node):
@@ -240,6 +261,10 @@ class Parser:
             return self._parse_run()
         if t.type == TokenType.STRUCT:
             return self._parse_struct()
+        if t.type == TokenType.IMPL:
+            return self._parse_impl()
+        if t.type == TokenType.MATCH:
+            return self._parse_match()
         if t.type in (TokenType.FN, TokenType.SEAL, TokenType.DRAFT, TokenType.ASYNC):
             return self._parse_function()
         if t.type == TokenType.SEMICOLON:
@@ -387,6 +412,25 @@ class Parser:
                 self._advance()
         self._expect(TokenType.RBRACE)
         return StructDef(name=name, fields=fields)
+
+    def _parse_impl(self) -> ImplBlock:
+        self._advance()  # impl
+        struct_name = self._expect(TokenType.IDENT).value
+        self._expect(TokenType.LBRACE)
+        methods: List[FunctionDef] = []
+        self._skip_newlines()
+        while not self._match(TokenType.RBRACE, TokenType.EOF):
+            self._skip_newlines()
+            if self._match(TokenType.RBRACE):
+                break
+            if self._match(TokenType.FN, TokenType.SEAL, TokenType.DRAFT, TokenType.ASYNC):
+                methods.append(self._parse_function())
+            else:
+                t = self._current()
+                raise ParseError(f"'impl' bloki ichida faqat funksiyalar (metodlar) bo'lishi mumkin, lekin '{t.value}' topildi", t)
+            self._skip_newlines()
+        self._expect(TokenType.RBRACE)
+        return ImplBlock(struct_name=struct_name, methods=methods)
 
     def _parse_function(self) -> FunctionDef:
         is_async = False
@@ -597,6 +641,9 @@ class Parser:
             self._expect(TokenType.RBRACKET)
             return ListLiteral(elements=elements)
 
+        if t.type == TokenType.MATCH:
+            return self._parse_match()
+
         if t.type == TokenType.FN:
             return self._parse_anonymous_function(is_async=False)
 
@@ -635,3 +682,50 @@ class Parser:
         return FunctionDef(name=name, params=params, return_type=return_type,
                            body=body, mode='draft', where_clause=where_clause,
                            is_async=is_async)
+
+    def _parse_match(self) -> MatchExpr:
+        self._expect(TokenType.MATCH)
+        target = self._parse_expr()
+        self._expect(TokenType.LBRACE)
+        arms: List[MatchArm] = []
+        self._skip_newlines()
+        while not self._match(TokenType.RBRACE, TokenType.EOF):
+            self._skip_newlines()
+            if self._match(TokenType.RBRACE):
+                break
+            # Ixtiyoriy 'case' kalit so'zi
+            if self._match(TokenType.IDENT) and self._current().value == 'case' and self._peek().type != TokenType.FAT_ARROW:
+                self._advance()
+
+            pattern = self._parse_match_pattern()
+            self._expect(TokenType.FAT_ARROW)
+            self._skip_newlines()
+            if self._match(TokenType.LBRACE):
+                body = Block(statements=self._parse_block())
+            elif self._match(TokenType.RETURN):
+                body = self._parse_return()
+            elif self._match(TokenType.THROW):
+                body = self._parse_throw()
+            else:
+                expr = self._parse_expr()
+                if self._match(TokenType.ASSIGN):
+                    self._advance()
+                    val = self._parse_expr()
+                    body = AssignStatement(target=expr, value=val)
+                else:
+                    body = expr
+            arms.append(MatchArm(pattern=pattern, body=body))
+            self._skip_newlines()
+            if self._match(TokenType.COMMA, TokenType.SEMICOLON):
+                self._advance()
+            self._skip_newlines()
+        self._expect(TokenType.RBRACE)
+        return MatchExpr(expr=target, arms=arms)
+
+    def _parse_match_pattern(self) -> Node:
+        t = self._current()
+        if t.type == TokenType.IDENT and t.value == '_':
+            self._advance()
+            return Wildcard(name='_')
+        return self._parse_expr()
+

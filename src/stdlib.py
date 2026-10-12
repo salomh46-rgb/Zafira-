@@ -384,6 +384,24 @@ def _get_fs_module() -> ZafiraModule:
 FS_MODULE = _get_fs_module()
 
 
+# ─── 9. STD.ENV ───
+
+def _get_env_module() -> ZafiraModule:
+    from src.std_env import create_env_module
+    return create_env_module()
+
+ENV_MODULE = _get_env_module()
+
+
+# ─── 10. STD.DATETIME ───
+
+def _get_datetime_module() -> ZafiraModule:
+    from src.std_datetime import create_datetime_module
+    return create_datetime_module()
+
+DATETIME_MODULE = _get_datetime_module()
+
+
 # ─── STDLIB MODULES RO'YXATI ───
 
 STDLIB_MODULES: Dict[str, ZafiraModule] = {
@@ -395,6 +413,8 @@ STDLIB_MODULES: Dict[str, ZafiraModule] = {
     'json': JSON_MODULE,
     'net': NET_MODULE,
     'fs': FS_MODULE,
+    'env': ENV_MODULE,
+    'datetime': DATETIME_MODULE,
 }
 
 

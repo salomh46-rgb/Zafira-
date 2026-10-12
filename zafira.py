@@ -32,7 +32,7 @@ from src.transpiler import Transpiler
 from src.package_manager import init_project, run_project, test_project, build_project
 
 
-ZAFIRA_VERSION = "0.6.0-alpha"
+ZAFIRA_VERSION = "0.7.0-alpha"
 
 BANNER = f"""
 ╔══════════════════════════════════════════════╗

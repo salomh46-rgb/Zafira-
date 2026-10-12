@@ -23,8 +23,8 @@ from src.parser import (
     Identifier, BinaryOp, UnaryOp, FunctionCall, MemberAccess, IndexAccess,
     ListLiteral, RangeExpr, LetStatement, ConstStatement, AssignStatement,
     ReturnStatement, IfStatement, WhileStatement, ForStatement, FunctionDef,
-    StructDef, ImportStatement, RunBlock, ExprStatement, Block, AwaitExpr,
-    TryStatement, ThrowStatement
+    StructDef, ImplBlock, ImportStatement, RunBlock, ExprStatement, Block, AwaitExpr,
+    TryStatement, ThrowStatement, MatchExpr, MatchArm, Wildcard
 )
 
 
@@ -150,6 +150,7 @@ class TypeEnvironment:
         self.symbols: Dict[str, Symbol] = {}
         self.functions: Dict[str, FunctionSignature] = {}
         self.structs: Dict[str, List[Tuple[str, str]]] = {}
+        self.struct_methods: Dict[str, Dict[str, FunctionSignature]] = {}
 
     def declare(self, name: str, type_name: str = 'Any', is_const: bool = False, const_value: Any = None) -> Symbol:
         sym = Symbol(name=name, type_name=type_name, is_const=is_const, const_value=const_value)
@@ -169,6 +170,27 @@ class TypeEnvironment:
     def declare_struct(self, name: str, fields: List[Tuple[str, str]]):
         self.structs[name] = fields
         self.declare(name, type_name='Fn', is_const=True)
+
+    def declare_struct_method(self, struct_name: str, method: FunctionDef) -> FunctionSignature:
+        if struct_name not in self.struct_methods:
+            self.struct_methods[struct_name] = {}
+        sig = FunctionSignature(
+            name=method.name,
+            params=method.params,
+            return_type=method.return_type or 'Any',
+            mode=method.mode,
+            where_clause=method.where_clause,
+            is_async=getattr(method, 'is_async', False)
+        )
+        self.struct_methods[struct_name][method.name] = sig
+        return sig
+
+    def lookup_struct_method(self, struct_name: str, method_name: str) -> Optional[FunctionSignature]:
+        if struct_name in self.struct_methods and method_name in self.struct_methods[struct_name]:
+            return self.struct_methods[struct_name][method_name]
+        if self.parent:
+            return self.parent.lookup_struct_method(struct_name, method_name)
+        return None
 
     def lookup(self, name: str) -> Optional[Symbol]:
         if name in self.symbols:
@@ -211,6 +233,8 @@ class TypeEnvironment:
 
     def all_names(self) -> List[str]:
         names = list(self.symbols.keys()) + list(self.functions.keys()) + list(self.structs.keys())
+        for m_dict in self.struct_methods.values():
+            names.extend(m_dict.keys())
         if self.parent:
             names.extend(self.parent.all_names())
         return list(set(names))
@@ -254,6 +278,9 @@ class TypeChecker:
                 )
             elif isinstance(stmt, StructDef):
                 self.root_env.declare_struct(stmt.name, stmt.fields)
+            elif isinstance(stmt, ImplBlock):
+                for method in stmt.methods:
+                    self.root_env.declare_struct_method(stmt.struct_name, method)
 
         # 2. Asosiy blok va operatorlarni tartib bilan tekshiramiz
         for stmt in program.body:
@@ -466,6 +493,42 @@ class TypeChecker:
             if ftype not in VALID_TYPES and ftype not in env.all_structs():
                 raise TypeCheckError(f"'{node.name}' strukturasining '{fname}' maydoni uchun noma'lum tip: '{ftype}'")
 
+    def _check_ImplBlock(self, node: ImplBlock, env: TypeEnvironment, **kwargs):
+        # 1. Struct mavjudligini tasdiqlash
+        if node.struct_name not in env.all_structs():
+            hint = self._get_did_you_mean(node.struct_name, env)
+            raise TypeCheckError(f"'{node.struct_name}' nomli struct topilmadi!{hint}")
+
+        # 2. Metodlarni structga biriktirish va tekshirish
+        for method in node.methods:
+            env.declare_struct_method(node.struct_name, method)
+
+            # Agar metod 'seal' bo'lsa, qat'iy tekshirish
+            if method.mode == 'seal':
+                for pname, ptype in method.params:
+                    expected_ptype = node.struct_name if (pname == 'self' and ptype is None) else ptype
+                    if expected_ptype and expected_ptype not in VALID_TYPES and expected_ptype not in env.all_structs():
+                        raise TypeCheckError(f"'{method.name}' metodining '{pname}' parametri uchun noma'lum tip: '{expected_ptype}'")
+
+                expected_ret = method.return_type or 'Any'
+                if expected_ret not in VALID_TYPES and expected_ret not in env.all_structs():
+                    raise TypeCheckError(f"'{method.name}' metodining return turi noma'lum: '{expected_ret}'")
+
+                fn_env = TypeEnvironment(parent=env)
+                for pname, ptype in method.params:
+                    actual_type = node.struct_name if (pname == 'self' and ptype is None) else (ptype or 'Any')
+                    fn_env.declare(pname, type_name=actual_type, is_const=False)
+
+                if method.where_clause:
+                    self._check_where_clause(method.where_clause, fn_env, method.name)
+
+                fn_returns: List[str] = []
+                for s in method.body:
+                    self._check_stmt(s, fn_env, current_fn=method, returns_found=fn_returns)
+
+                if expected_ret not in ('Null', 'Any') and not fn_returns:
+                    raise TypeCheckError(f"'{method.name}' metodida return operatori topilmadi, lekin '{expected_ret}' qaytarilishi kutilgan!")
+
     def _check_ImportStatement(self, node: ImportStatement, env: TypeEnvironment, **kwargs):
         if node.path == 'sys.io':
             env.declare('print', type_name='Fn', is_const=True)
@@ -527,6 +590,9 @@ class TypeChecker:
                     for s in sub_prog.body:
                         if isinstance(s, StructDef):
                             env.declare_struct(s.name, s.fields)
+                        elif isinstance(s, ImplBlock):
+                            for m in s.methods:
+                                env.declare_struct_method(s.struct_name, m)
                 except Exception:
                     pass
 
@@ -539,6 +605,11 @@ class TypeChecker:
 
     def _check_ExprStatement(self, node: ExprStatement, env: TypeEnvironment, **kwargs):
         self._check_expr(node.expr, env)
+
+    def _check_MatchExpr(self, node: MatchExpr, env: TypeEnvironment,
+                         current_fn: Optional[FunctionDef] = None,
+                         returns_found: Optional[List[str]] = None, **kwargs):
+        return self._infer_MatchExpr(node, env, current_fn=current_fn, returns_found=returns_found)
 
     def _check_Block(self, node: Block, env: TypeEnvironment,
                      current_fn: Optional[FunctionDef] = None,
@@ -782,6 +853,43 @@ class TypeChecker:
                 if callee.member in ('write_text', 'append_text', 'make_dir', 'remove', 'remove_dir', 'copy'):
                     return 'Null'
                 raise TypeCheckError(f"std.fs modulida '{callee.member}' funksiyasi mavjud emas!")
+            if isinstance(callee.obj, Identifier) and callee.obj.name == 'env':
+                if callee.member in ('os', 'cwd'):
+                    return 'String'
+                if callee.member in ('has',):
+                    return 'Bool'
+                if callee.member in ('set', 'remove'):
+                    return 'Null'
+                if callee.member in ('args',):
+                    return 'List'
+                if callee.member in ('get', 'all'):
+                    return 'Any'
+                raise TypeCheckError(f"std.env modulida '{callee.member}' funksiyasi mavjud emas!")
+            if isinstance(callee.obj, Identifier) and callee.obj.name == 'datetime':
+                if callee.member in ('now',):
+                    return 'Any'
+                if callee.member in ('timestamp',):
+                    return 'Float'
+                if callee.member in ('format',):
+                    return 'String'
+                if callee.member in ('sleep', 'sleep_ms'):
+                    return 'Null'
+                raise TypeCheckError(f"std.datetime modulida '{callee.member}' funksiyasi mavjud emas!")
+            if obj_type in env.all_structs():
+                method_sig = env.lookup_struct_method(obj_type, callee.member)
+                if method_sig is not None:
+                    if method_sig.mode == 'seal':
+                        expected_params = [p for p in method_sig.params if p[0] != 'self']
+                        if len(node.args) != len(expected_params):
+                            raise TypeCheckError(f"'{callee.member}' metodi {len(expected_params)} ta argument kutadi, lekin {len(node.args)} ta berildi!")
+                        for (pname, ptype), arg_node in zip(expected_params, node.args):
+                            arg_type = self._check_expr(arg_node, env)
+                            expected_type = ptype or 'Any'
+                            if not is_type_compatible(expected_type, arg_type, env.all_structs()):
+                                raise TypeCheckError(f"'{callee.member}' metodining '{pname}' parametri uchun {arg_type} o'rniga {expected_type} kutilgan!")
+                    if getattr(method_sig, 'is_async', False):
+                        return 'Task'
+                    return method_sig.return_type or 'Any'
             return 'Any'
 
         else:
@@ -799,6 +907,18 @@ class TypeChecker:
             ):
                 return 'Fn'
             raise TypeCheckError(f"std.fs modulida '{node.member}' a'zosi mavjud emas!")
+        if isinstance(node.obj, Identifier) and node.obj.name == 'env':
+            if node.member in (
+                'get', 'set', 'has', 'remove', 'all', 'args', 'os', 'cwd'
+            ):
+                return 'Fn'
+            raise TypeCheckError(f"std.env modulida '{node.member}' a'zosi mavjud emas!")
+        if isinstance(node.obj, Identifier) and node.obj.name == 'datetime':
+            if node.member in (
+                'now', 'timestamp', 'format', 'sleep', 'sleep_ms'
+            ):
+                return 'Fn'
+            raise TypeCheckError(f"std.datetime modulida '{node.member}' a'zosi mavjud emas!")
         if obj_type == 'List':
             if node.member == 'len': return 'Int'
             if node.member in ('first', 'last'): return 'Any'
@@ -810,10 +930,14 @@ class TypeChecker:
             raise TypeCheckError(f"String turida '{node.member}' a'zosi mavjud emas!")
         if obj_type in env.all_structs():
             fields = env.lookup_struct(obj_type)
-            for fname, ftype in fields:
-                if fname == node.member:
-                    return ftype
-            raise TypeCheckError(f"'{obj_type}' strukturasida '{node.member}' maydoni mavjud emas!")
+            if fields:
+                for fname, ftype in fields:
+                    if fname == node.member:
+                        return ftype
+            method_sig = env.lookup_struct_method(obj_type, node.member)
+            if method_sig is not None:
+                return 'Fn'
+            raise TypeCheckError(f"'{obj_type}' strukturasida '{node.member}' maydoni yoki metodi mavjud emas!")
         return 'Any'
 
     def _infer_IndexAccess(self, node: IndexAccess, env: TypeEnvironment) -> str:
@@ -870,4 +994,69 @@ class TypeChecker:
         if inner_type in ('Task', 'Future'):
             return 'Any'
         return inner_type
+
+    def _infer_Wildcard(self, node: Wildcard, env: TypeEnvironment) -> str:
+        return 'Any'
+
+    def _infer_MatchExpr(self, node: MatchExpr, env: TypeEnvironment,
+                         current_fn: Optional[FunctionDef] = None,
+                         returns_found: Optional[List[str]] = None) -> str:
+        target_type = self._check_expr(node.expr, env)
+        arm_types = []
+        for arm in node.arms:
+            arm_env = TypeEnvironment(parent=env)
+            pattern = arm.pattern
+            # Pattern tekshiruvi va yangi bog'lanish
+            if isinstance(pattern, Wildcard) or (isinstance(pattern, Identifier) and pattern.name == '_'):
+                pass
+            elif isinstance(pattern, Identifier):
+                sym = env.lookup(pattern.name)
+                if sym is None and env.lookup_function(pattern.name) is None:
+                    # Yangi o'zgaruvchi bog'lanishi (pattern binding)
+                    arm_env.declare(pattern.name, type_name=target_type or 'Any', is_const=False)
+                else:
+                    self._check_expr(pattern, env)
+            elif isinstance(pattern, RangeExpr):
+                self._check_expr(pattern, env)
+            else:
+                self._check_expr(pattern, env)
+
+            # Tana tekshiruvi
+            if isinstance(arm.body, Block):
+                for s in arm.body.statements:
+                    self._check_stmt(s, arm_env, current_fn=current_fn, returns_found=returns_found)
+                if arm.body.statements:
+                    last_stmt = arm.body.statements[-1]
+                    if isinstance(last_stmt, ExprStatement):
+                        arm_types.append(self._check_expr(last_stmt.expr, arm_env))
+                    elif isinstance(last_stmt, ReturnStatement):
+                        arm_types.append(self._check_expr(last_stmt.value, arm_env) if last_stmt.value else 'Null')
+                    else:
+                        arm_types.append('Any')
+                else:
+                    arm_types.append('Any')
+            elif isinstance(arm.body, ReturnStatement):
+                self._check_stmt(arm.body, arm_env, current_fn=current_fn, returns_found=returns_found)
+                arm_types.append(self._check_expr(arm.body.value, arm_env) if arm.body.value else 'Null')
+            elif isinstance(arm.body, ThrowStatement):
+                self._check_stmt(arm.body, arm_env, current_fn=current_fn, returns_found=returns_found)
+                arm_types.append('Any')
+            elif isinstance(arm.body, AssignStatement):
+                self._check_stmt(arm.body, arm_env, current_fn=current_fn, returns_found=returns_found)
+                arm_types.append('Any')
+            else:
+                body_type = self._check_expr(arm.body, arm_env)
+                arm_types.append(body_type)
+
+        non_any_types = [t for t in arm_types if t != 'Any']
+        if not non_any_types:
+            return 'Any'
+
+        first_t = non_any_types[0]
+        for t in non_any_types[1:]:
+            if not is_type_compatible(first_t, t, env.all_structs()) and not is_type_compatible(t, first_t, env.all_structs()):
+                raise TypeCheckError(f"Match shoxobchalarining tiplari mos kelmaydi: '{first_t}' va '{t}'!")
+
+        return first_t
+
 

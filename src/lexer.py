@@ -30,6 +30,7 @@ class TokenType(Enum):
     FOR        = auto()   # for i in 0..10 { ... }
     IN         = auto()   # for i IN range
     STRUCT     = auto()   # struct Odam { ... }
+    IMPL       = auto()   # impl Odam { ... }
     IMPORT     = auto()   # import sys.ai
     AS         = auto()   # as
     TRUE       = auto()
@@ -37,6 +38,7 @@ class TokenType(Enum):
     NULL_KW    = auto()
 
     # ZAFIRA O'ZIGA XOS
+    MATCH      = auto()   # match expr { ... }
     SEAL       = auto()   # seal fn (qat'iy rejim)
     DRAFT      = auto()   # draft fn (erkin rejim)
     WHERE      = auto()   # where shart (invariant)
@@ -67,6 +69,7 @@ class TokenType(Enum):
     OR         = auto()   # or
     NOT        = auto()   # not
     ARROW      = auto()   # ->
+    FAT_ARROW  = auto()   # =>
     DOTDOT     = auto()   # .. (range)
     DOT        = auto()   # .
 
@@ -98,11 +101,13 @@ KEYWORDS = {
     'for': TokenType.FOR,
     'in': TokenType.IN,
     'struct': TokenType.STRUCT,
+    'impl': TokenType.IMPL,
     'import': TokenType.IMPORT,
     'as': TokenType.AS,
     'true': TokenType.TRUE,
     'false': TokenType.FALSE,
     'null': TokenType.NULL_KW,
+    'match': TokenType.MATCH,
     'seal': TokenType.SEAL,
     'draft': TokenType.DRAFT,
     'where': TokenType.WHERE,
@@ -286,6 +291,9 @@ class Lexer:
             elif two == '->':
                 self._advance(); self._advance()
                 self.tokens.append(Token(TokenType.ARROW, '->', self.line, start_col))
+            elif two == '=>':
+                self._advance(); self._advance()
+                self.tokens.append(Token(TokenType.FAT_ARROW, '=>', self.line, start_col))
             elif two == '..':
                 self._advance(); self._advance()
                 self.tokens.append(Token(TokenType.DOTDOT, '..', self.line, start_col))

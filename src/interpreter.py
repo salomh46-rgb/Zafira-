@@ -13,8 +13,8 @@ from src.parser import (
     Identifier, BinaryOp, UnaryOp, FunctionCall, MemberAccess, IndexAccess,
     ListLiteral, RangeExpr, LetStatement, ConstStatement, AssignStatement,
     ReturnStatement, IfStatement, WhileStatement, ForStatement, FunctionDef,
-    StructDef, ImportStatement, RunBlock, ExprStatement, AwaitExpr,
-    TryStatement, ThrowStatement
+    StructDef, ImplBlock, ImportStatement, RunBlock, ExprStatement, AwaitExpr,
+    TryStatement, ThrowStatement, Block, MatchExpr, MatchArm, Wildcard
 )
 
 
@@ -93,6 +93,28 @@ class ZafiraStruct:
         return f"{self.type_name}{{ {flds} }}"
 
 
+class ZafiraBoundMethod:
+    """Struct instansiyasiga bog'langan metod (bound method)."""
+    def __init__(self, instance: ZafiraStruct, function: ZafiraFunction, interpreter: Optional['Interpreter'] = None):
+        self.instance = instance
+        self.function = function
+        self.interpreter = interpreter
+
+    def __call__(self, *args):
+        if self.interpreter is None:
+            raise ZafiraError("ZafiraBoundMethod interpreterga bog'lanmagan")
+        params = self.function.node.params
+        if params and params[0][0] == 'self':
+            call_args = [self.instance] + list(args)
+        else:
+            call_args = [self.instance] + list(args)
+        return self.interpreter.call_function(self.function, call_args)
+
+    def __repr__(self):
+        fn_name = self.function.node.name if self.function.node.name else "<anonymous>"
+        return f"<bound method {self.instance.type_name}.{fn_name}>"
+
+
 class ZafiraList:
     def __init__(self, items: List[Any]):
         self.items = items
@@ -111,6 +133,13 @@ class Environment:
         self._vars: Dict[str, Any] = {}
         self._consts: set = set()
         self.parent = parent
+
+    def has(self, name: str) -> bool:
+        if name in self._vars:
+            return True
+        if self.parent:
+            return self.parent.has(name)
+        return False
 
     def get(self, name: str) -> Any:
         if name in self._vars:
@@ -202,7 +231,7 @@ def _zf_str(v) -> str:
         return 'null'
     if isinstance(v, bool):
         return 'true' if v else 'false'
-    if isinstance(v, (ZafiraList, ZafiraStruct, ZafiraTask)):
+    if isinstance(v, (ZafiraList, ZafiraStruct, ZafiraTask, ZafiraBoundMethod)):
         return repr(v)
     from src.ai_engine import Tensor
     if isinstance(v, Tensor):
@@ -244,6 +273,7 @@ class Interpreter:
         for name, fn in BUILTINS.items():
             self.global_env.set(name, fn)
         self._struct_defs: Dict[str, List[tuple]] = {}
+        self._struct_methods: Dict[str, Dict[str, ZafiraFunction]] = {}
         self._thread_pool = concurrent.futures.ThreadPoolExecutor(
             max_workers=32, thread_name_prefix="ZafiraAsync"
         )
@@ -416,6 +446,57 @@ class Interpreter:
         elif node.else_block:
             child_env = Environment(parent=env)
             return self._exec_block(node.else_block, child_env)
+    def _exec_Block(self, node: Block, env: Environment) -> Any:
+        child_env = Environment(parent=env)
+        return self._exec_block(node.statements, child_env)
+
+    def _exec_MatchExpr(self, node: MatchExpr, env: Environment) -> Any:
+        target_val = self._exec(node.expr, env)
+        for arm in node.arms:
+            matched = False
+            arm_env = Environment(parent=env)
+            pattern = arm.pattern
+
+            if isinstance(pattern, Wildcard) or (isinstance(pattern, Identifier) and pattern.name == '_'):
+                matched = True
+            elif isinstance(pattern, RangeExpr):
+                if isinstance(target_val, bool):
+                    matched = False
+                else:
+                    start = self._exec(pattern.start, env)
+                    end = self._exec(pattern.end, env)
+                    try:
+                        min_v = min(start, end)
+                        max_v = max(start, end)
+                        matched = (min_v <= target_val < max_v)
+                    except TypeError:
+                        matched = False
+            elif isinstance(pattern, Identifier):
+                if env.has(pattern.name):
+                    var_val = env.get(pattern.name)
+                    if isinstance(target_val, bool) != isinstance(var_val, bool):
+                        matched = False
+                    else:
+                        matched = (target_val == var_val)
+                    if matched:
+                        arm_env.set(pattern.name, target_val)
+                else:
+                    # Yangi bog'lanish (pattern variable binding)
+                    matched = True
+                    arm_env.set(pattern.name, target_val)
+            else:
+                # Literal (NumberLiteral, StringLiteral, BoolLiteral, NullLiteral, UnaryOp, etc.)
+                pattern_val = self._exec(pattern, env)
+                if isinstance(target_val, bool) != isinstance(pattern_val, bool):
+                    matched = False
+                else:
+                    matched = (target_val == pattern_val)
+
+            if matched:
+                if isinstance(arm.body, Block):
+                    return self._exec_block(arm.body.statements, arm_env)
+                return self._exec(arm.body, arm_env)
+
         return None
 
     def _exec_WhileStatement(self, node, env):
@@ -496,6 +577,15 @@ class Interpreter:
                     fields[name] = None
             return ZafiraStruct(node.name, fields)
         env.set(node.name, constructor)
+        return None
+
+    def _exec_ImplBlock(self, node: ImplBlock, env: Environment):
+        struct_name = node.struct_name
+        if struct_name not in self._struct_methods:
+            self._struct_methods[struct_name] = {}
+        for method in node.methods:
+            fn = ZafiraFunction(node=method, env=env, interpreter=self)
+            self._struct_methods[struct_name][method.name] = fn
         return None
 
     def _is_local_module_path(self, path: str) -> bool:
@@ -663,6 +753,9 @@ class Interpreter:
         if isinstance(callee, ZafiraFunction):
             return self.call_function(callee, args)
 
+        if isinstance(callee, ZafiraBoundMethod):
+            return callee(*args)
+
         # Python builtin funksiya
         if callable(callee):
             return callee(*args)
@@ -685,7 +778,10 @@ class Interpreter:
         if isinstance(obj, ZafiraStruct):
             if member in obj.fields:
                 return obj.fields[member]
-            raise ZafiraError(f"'{obj.type_name}' da '{member}' maydoni yo'q")
+            if obj.type_name in self._struct_methods and member in self._struct_methods[obj.type_name]:
+                method_fn = self._struct_methods[obj.type_name][member]
+                return ZafiraBoundMethod(instance=obj, function=method_fn, interpreter=self)
+            raise ZafiraError(f"'{obj.type_name}' da '{member}' maydoni yoki metodi yo'q")
 
         if isinstance(obj, ZafiraList):
             # Ro'yxat metodlari

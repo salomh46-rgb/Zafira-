@@ -1,0 +1,71 @@
+// ==========================================
+// Zafira Dasturlash Tili - Pattern Matching
+// match ... case / => mexanizmi namoyishi
+// ==========================================
+
+print("=== 1. Sonlarni Match Qilish ===")
+let son = 2
+let son_nomi = match son {
+    1 => "Bir",
+    2 => "Ikki",
+    3 => "Uch",
+    _ => "Boshqa son"
+}
+print("Son (2) nomi: " + son_nomi)
+
+print("\n=== 2. Matnlarni Match Qilish ===")
+let buyruq = "start"
+let xabar = match buyruq {
+    "start" => "Tizim ishga tushirildi",
+    "stop" => "Tizim to'xtatildi",
+    "pause" => "Tizim vaqtincha to'xtatildi",
+    _ => "Noma'lum buyruq"
+}
+print("Buyruq ('start') xabari: " + xabar)
+
+print("\n=== 3. Range (Oraliq) Match Qilish ===")
+let yosh = 7
+let toifa = match yosh {
+    0..3 => "Chaqaloq",
+    3..7 => "Bog'cha bolasi",
+    7..18 => "Maktab o'quvchisi",
+    18..60 => "Katta yoshli inson",
+    _ => "Keksa nuroniy"
+}
+print("Yosh toifasi (7 yosh): " + toifa)
+
+let yosh2 = 5
+let toifa2 = match yosh2 {
+    0..3 => "Chaqaloq",
+    3..7 => "Bog'cha bolasi",
+    7..18 => "Maktab o'quvchisi",
+    _ => "Boshqa"
+}
+print("Yosh toifasi (5 yosh): " + toifa2)
+
+print("\n=== 4. Default '_' (Wildcard) Shoxobchasi ===")
+let kutilmagan = 999
+let standart_natija = match kutilmagan {
+    1 => "Birinchi variant",
+    2 => "Ikkinchi variant",
+    _ => "Standart qiymat: Wildcard '_' muvaffaqiyatli ishladi!"
+}
+print("Natija: " + standart_natija)
+
+print("\n=== 5. Match Operator (Statement) Sifatida ===")
+let status_matni = "Boshlang'ich"
+match 1 {
+    1 => status_matni = "Status muvaffaqiyatli yangilandi (1)",
+    _ => status_matni = "Standart status"
+}
+print("Operator holati: " + status_matni)
+
+print("\n=== 6. Pattern Variable Binding (Bog'lanish) ===")
+let kiruvchi_qiymat = 42
+let xulosa = match kiruvchi_qiymat {
+    0 => "Nol",
+    qiymat => "Qabul qilingan dinamik qiymat: " + qiymat
+}
+print(xulosa)
+
+print("\nBarcha Pattern Matching sinovlari muvaffaqiyatli yakunlandi!")
