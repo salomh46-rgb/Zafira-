@@ -1,0 +1,50 @@
+// ══════════════════════════════════════════════════════════════
+//  Zafira Dasturlash Tili - Asinxron Dasturlash (async / await)
+//  Namuna Fayli: examples/async_test.zf
+// ══════════════════════════════════════════════════════════════
+
+print("=== Zafira Asinxron Dasturlash (async / await) Sinovi ===")
+
+// 1. Asinxron ma'lumot yuklash funksiyasi
+async fn yukla_data(id) {
+    print("Yuklash boshlandi: ID = " + String(id))
+    sleep(0.05)
+    print("Yuklash yakunlandi: ID = " + String(id))
+    return "Foydalanuvchi ma'lumoti #" + String(id)
+}
+
+// 2. Ketma-ket await chaqiruvi
+print("\n--- 1. Yagona Asinxron Chaqiriq ---")
+let bitta = await yukla_data(1)
+print("Qabul qilingan natija: " + bitta)
+
+// 3. Parallel asinxron chaqiriqlar (Background Tasks)
+print("\n--- 2. Parallel Asinxron Chaqiriqlar Sinovi ---")
+print("Vazifalar parallel ravishda ishga tushirilmoqda...")
+
+let task1 = yukla_data(101)
+let task2 = yukla_data(102)
+let task3 = yukla_data(103)
+
+print("Vazifa 1 turi: " + type(task1))
+
+// Parallel bajarilgan vazifalar natijalarini kutib olish
+let res1 = await task1
+let res2 = await task2
+let res3 = await task3
+
+print("Natija 1: " + res1)
+print("Natija 2: " + res2)
+print("Natija 3: " + res3)
+
+// 4. Seal (qat'iy tipli) asinxron funksiya
+print("\n--- 3. Seal Asinxron Funksiya Sinovi ---")
+seal async fn hisobla_kvadrat(son: Int) -> Int {
+    sleep(0.02)
+    return son * son
+}
+
+let kv = await hisobla_kvadrat(12)
+print("12 ning kvadrati = " + String(kv))
+
+print("\n=== Asinxron testlar muvaffaqiyatli yakunlandi! ===")

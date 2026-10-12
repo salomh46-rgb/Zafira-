@@ -3,13 +3,16 @@ Zafira Language - Interpreter (Draft Mode)
 AST daraxtini bevosita bajaradi.
 """
 
+import concurrent.futures
+import asyncio
+import time
 from typing import Any, Dict, List, Optional
 from src.parser import (
     Program, Node, NumberLiteral, StringLiteral, BoolLiteral, NullLiteral,
     Identifier, BinaryOp, UnaryOp, FunctionCall, MemberAccess, IndexAccess,
     ListLiteral, RangeExpr, LetStatement, ConstStatement, AssignStatement,
     ReturnStatement, IfStatement, WhileStatement, ForStatement, FunctionDef,
-    StructDef, ImportStatement, RunBlock, ExprStatement
+    StructDef, ImportStatement, RunBlock, ExprStatement, AwaitExpr
 )
 
 
@@ -20,6 +23,33 @@ class ZafiraReturn(Exception):
 
 class ZafiraError(Exception):
     pass
+
+
+class ZafiraTask:
+    """Zafira asinxron vazifasi (Task / Future)"""
+    def __init__(self, future: concurrent.futures.Future, name: str = "<anonymous>"):
+        self.future = future
+        self.name = name
+
+    def result(self, timeout: Optional[float] = None) -> Any:
+        try:
+            return self.future.result(timeout=timeout)
+        except ZafiraReturn as ret:
+            return ret.value
+        except ZafiraError:
+            raise
+        except Exception as e:
+            raise ZafiraError(f"Asinxron vazifa xatosi ('{self.name}'): {e}")
+
+    def done(self) -> bool:
+        return self.future.done()
+
+    def wait(self, timeout: Optional[float] = None) -> Any:
+        return self.result(timeout=timeout)
+
+    def __repr__(self):
+        status = "bajarildi" if self.done() else "kutilmoqda"
+        return f"<Task '{self.name}' status={status}>"
 
 
 class ZafiraFunction:
@@ -35,7 +65,8 @@ class ZafiraFunction:
 
     def __repr__(self):
         name = self.node.name if self.node.name else "<anonymous>"
-        return f"<fn {name}>"
+        prefix = "async fn" if getattr(self.node, 'is_async', False) else "fn"
+        return f"<{prefix} {name}>"
 
 
 class ZafiraStruct:
@@ -121,6 +152,7 @@ def _builtin_type(obj):
     from src.ai_engine import Tensor
     mapping = {int: 'Int', float: 'Float', str: 'String',
                bool: 'Bool', ZafiraList: 'List', ZafiraFunction: 'Fn',
+               ZafiraTask: 'Task',
                Tensor: 'Tensor',
                ZafiraStruct: lambda x: x.type_name}
     for k, v in mapping.items():
@@ -143,12 +175,20 @@ def _builtin_str(v):
     return _zf_str(v)
 
 
+def _builtin_sleep(secs):
+    try:
+        time.sleep(float(secs))
+        return None
+    except Exception as e:
+        raise ZafiraError(f"sleep xatosi: {e}")
+
+
 def _zf_str(v) -> str:
     if v is None:
         return 'null'
     if isinstance(v, bool):
         return 'true' if v else 'false'
-    if isinstance(v, (ZafiraList, ZafiraStruct)):
+    if isinstance(v, (ZafiraList, ZafiraStruct, ZafiraTask)):
         return repr(v)
     from src.ai_engine import Tensor
     if isinstance(v, Tensor):
@@ -171,6 +211,7 @@ BUILTINS = {
     'Int': _builtin_int,
     'Float': _builtin_float,
     'String': _builtin_str,
+    'sleep': _builtin_sleep,
     'assert': _builtin_assert,
 }
 
@@ -183,6 +224,19 @@ class Interpreter:
         for name, fn in BUILTINS.items():
             self.global_env.set(name, fn)
         self._struct_defs: Dict[str, List[tuple]] = {}
+        self._thread_pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=32, thread_name_prefix="ZafiraAsync"
+        )
+
+    def close(self):
+        if hasattr(self, '_thread_pool') and self._thread_pool:
+            self._thread_pool.shutdown(wait=False)
+
+    def __del__(self):
+        try:
+            self.close()
+        except:
+            pass
 
     def run(self, program: Program):
         return self._exec_block(program.body, self.global_env)
@@ -267,6 +321,26 @@ class Interpreter:
         if node.op == '-': return -val
         if node.op == 'not': return not val
         raise ZafiraError(f"Noma'lum unary operator: {node.op}")
+
+    def _exec_AwaitExpr(self, node, env):
+        target = self._exec(node.expr, env)
+        if isinstance(target, ZafiraTask):
+            return target.result()
+        if isinstance(target, concurrent.futures.Future):
+            return target.result()
+        if hasattr(target, 'result') and callable(getattr(target, 'result')):
+            return target.result()
+        if asyncio.iscoroutine(target) or isinstance(target, asyncio.Future):
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            if loop.is_running():
+                future = asyncio.run_coroutine_threadsafe(target, loop)
+                return future.result()
+            return loop.run_until_complete(target)
+        return target
 
     # ─── STATEMENT HANDLERLAR ───
 
@@ -392,18 +466,7 @@ class Interpreter:
 
     # ─── FUNKSIYA CHAQIRISH ───
 
-    def call_function(self, fn: ZafiraFunction, args: list) -> Any:
-        # where (invariant) tekshiruvi
-        if fn.node.where_clause:
-            call_env = Environment(parent=fn.closure)
-            for (pname, _), arg in zip(fn.node.params, args):
-                call_env.set(pname, arg)
-            ok = self._exec(fn.node.where_clause, call_env)
-            if not ok:
-                raise ZafiraError(
-                    f"'{fn.node.name}' funksiyasi 'where' sharti bajarilmadi! "
-                    f"Chaqirildi: {args}"
-                )
+    def _call_sync_function(self, fn: ZafiraFunction, args: list) -> Any:
         call_env = Environment(parent=fn.closure)
         for (pname, _), arg in zip(fn.node.params, args):
             call_env.set(pname, arg)
@@ -412,6 +475,25 @@ class Interpreter:
         except ZafiraReturn as ret:
             return ret.value
         return None
+
+    def call_function(self, fn: ZafiraFunction, args: list) -> Any:
+        # where (invariant) tekshiruvi
+        if fn.node.where_clause:
+            check_env = Environment(parent=fn.closure)
+            for (pname, _), arg in zip(fn.node.params, args):
+                check_env.set(pname, arg)
+            ok = self._exec(fn.node.where_clause, check_env)
+            if not ok:
+                raise ZafiraError(
+                    f"'{fn.node.name}' funksiyasi 'where' sharti bajarilmadi! "
+                    f"Chaqirildi: {args}"
+                )
+
+        if getattr(fn.node, 'is_async', False):
+            future = self._thread_pool.submit(self._call_sync_function, fn, args)
+            return ZafiraTask(future=future, name=fn.node.name or "<anonymous>")
+
+        return self._call_sync_function(fn, args)
 
     def _exec_FunctionCall(self, node, env):
         callee = self._exec(node.callee, env)
@@ -429,6 +511,15 @@ class Interpreter:
     def _exec_MemberAccess(self, node, env):
         obj = self._exec(node.obj, env)
         member = node.member
+
+        if isinstance(obj, ZafiraTask):
+            if member == 'done':
+                return obj.done
+            if member == 'result':
+                return obj.result
+            if member == 'wait':
+                return obj.wait
+            raise ZafiraError(f"Task da '{member}' metodi yo'q")
 
         if isinstance(obj, ZafiraStruct):
             if member in obj.fields:

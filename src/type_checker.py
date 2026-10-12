@@ -22,7 +22,7 @@ from src.parser import (
     Identifier, BinaryOp, UnaryOp, FunctionCall, MemberAccess, IndexAccess,
     ListLiteral, RangeExpr, LetStatement, ConstStatement, AssignStatement,
     ReturnStatement, IfStatement, WhileStatement, ForStatement, FunctionDef,
-    StructDef, ImportStatement, RunBlock, ExprStatement, Block
+    StructDef, ImportStatement, RunBlock, ExprStatement, Block, AwaitExpr
 )
 
 
@@ -32,7 +32,7 @@ class TypeCheckError(Exception):
 
 
 # Zafira tilining asosiy tiplari
-VALID_TYPES = {'Int', 'Float', 'String', 'Bool', 'List', 'Null', 'Any'}
+VALID_TYPES = {'Int', 'Float', 'String', 'Bool', 'List', 'Null', 'Any', 'Task', 'Future'}
 
 
 def is_type_compatible(expected: str, actual: str, struct_names: Optional[Set[str]] = None) -> bool:
@@ -65,6 +65,8 @@ def node_to_str(node: Node) -> str:
         return f"{node_to_str(node.left)} {node.op} {node_to_str(node.right)}"
     if isinstance(node, UnaryOp):
         return f"{node.op} {node_to_str(node.operand)}"
+    if isinstance(node, AwaitExpr):
+        return f"await {node_to_str(node.expr)}"
     return str(type(node).__name__)
 
 
@@ -81,6 +83,8 @@ def eval_static(node: Node, env: Dict[str, Any]) -> Any:
         return None
     if isinstance(node, Identifier):
         return env.get(node.name, None)
+    if isinstance(node, AwaitExpr):
+        return eval_static(node.expr, env)
     if isinstance(node, UnaryOp):
         val = eval_static(node.operand, env)
         if val is not None:
@@ -132,6 +136,7 @@ class FunctionSignature:
     return_type: str
     mode: str  # 'draft' | 'seal'
     where_clause: Optional[Node] = None
+    is_async: bool = False
 
 
 class TypeEnvironment:
@@ -149,9 +154,10 @@ class TypeEnvironment:
 
     def declare_function(self, name: str, params: List[Tuple[str, Optional[str]]],
                          return_type: str = 'Any', mode: str = 'draft',
-                         where_clause: Optional[Node] = None) -> FunctionSignature:
+                         where_clause: Optional[Node] = None,
+                         is_async: bool = False) -> FunctionSignature:
         fn_sig = FunctionSignature(name=name, params=params, return_type=return_type,
-                                   mode=mode, where_clause=where_clause)
+                                   mode=mode, where_clause=where_clause, is_async=is_async)
         self.functions[name] = fn_sig
         self.declare(name, type_name='Fn', is_const=True)
         return fn_sig
@@ -217,6 +223,8 @@ def create_root_env() -> TypeEnvironment:
     env.declare_function('Int', [('val', 'Any')], return_type='Int', mode='draft')
     env.declare_function('Float', [('val', 'Any')], return_type='Float', mode='draft')
     env.declare_function('String', [('val', 'Any')], return_type='String', mode='draft')
+    env.declare_function('sleep', [('secs', 'Any')], return_type='Null', mode='draft')
+    env.declare_function('assert', [('cond', 'Any'), ('msg', 'Any')], return_type='Bool', mode='draft')
     return env
 
 
@@ -236,7 +244,8 @@ class TypeChecker:
                     params=stmt.params,
                     return_type=stmt.return_type or 'Any',
                     mode=stmt.mode,
-                    where_clause=stmt.where_clause
+                    where_clause=stmt.where_clause,
+                    is_async=getattr(stmt, 'is_async', False)
                 )
             elif isinstance(stmt, StructDef):
                 self.root_env.declare_struct(stmt.name, stmt.fields)
@@ -311,6 +320,8 @@ class TypeChecker:
                 check_identifiers(n.right)
             elif isinstance(n, UnaryOp):
                 check_identifiers(n.operand)
+            elif isinstance(n, AwaitExpr):
+                check_identifiers(n.expr)
             elif isinstance(n, FunctionCall):
                 check_identifiers(n.callee)
                 for a in n.args:
@@ -672,10 +683,15 @@ class TypeChecker:
                         arg_vals_str = ', '.join(f"{p}={v}" for p, v in args_evaluated)
                         raise TypeCheckError(f"'{name}' funksiyasining 'where' invarianti statik tekshiruvda buzildi! Shart: ({where_str}), Argumentlar: ({arg_vals_str})")
 
+                if getattr(fn, 'is_async', False):
+                    return 'Task'
+
                 return fn.return_type or 'Any'
             else:
                 # 'draft' funksiyalar erkin qoldiriladi
                 for a in node.args: self._check_expr(a, env)
+                if getattr(fn, 'is_async', False):
+                    return 'Task'
                 return fn.return_type or 'Any'
 
         elif isinstance(callee, MemberAccess):
@@ -743,3 +759,27 @@ class TypeChecker:
         if not is_type_compatible('Int', end_type, env.all_structs()):
             raise TypeCheckError(f"Range tugash qiymati Int bo'lishi kerak, '{end_type}' berildi!")
         return 'List'
+
+    def _infer_AwaitExpr(self, node: AwaitExpr, env: TypeEnvironment) -> str:
+        # Agar await qilinayotgan ifoda bevosita funksiya chaqiruvi bo'lsa
+        if isinstance(node.expr, FunctionCall) and isinstance(node.expr.callee, Identifier):
+            name = node.expr.callee.name
+            fn = env.lookup_function(name)
+            if fn is not None:
+                if fn.mode == 'seal':
+                    if len(node.expr.args) != len(fn.params):
+                        raise TypeCheckError(f"'{name}' funksiyasi {len(fn.params)} ta argument kutadi, lekin {len(node.expr.args)} ta berildi!")
+                    for (pname, ptype), arg_node in zip(fn.params, node.expr.args):
+                        arg_type = self._check_expr(arg_node, env)
+                        expected_type = ptype or 'Any'
+                        if not is_type_compatible(expected_type, arg_type, env.all_structs()):
+                            raise TypeCheckError(f"'{name}' funksiyasining '{pname}' parametri uchun {arg_type} o'rniga {expected_type} kutilgan!")
+                else:
+                    for a in node.expr.args: self._check_expr(a, env)
+                return fn.return_type or 'Any'
+
+        inner_type = self._check_expr(node.expr, env)
+        if inner_type in ('Task', 'Future'):
+            return 'Any'
+        return inner_type
+

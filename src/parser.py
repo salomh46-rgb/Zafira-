@@ -71,6 +71,10 @@ class RangeExpr(Node):
     start: Node
     end: Node
 
+@dataclass
+class AwaitExpr(Node):
+    expr: Node
+
 # --- Operatorlar (Statements) ---
 @dataclass
 class LetStatement(Node):
@@ -122,6 +126,7 @@ class FunctionDef(Node):
     body: List[Node]
     mode: str                  # 'draft' | 'seal'
     where_clause: Optional[Node]
+    is_async: bool = False
 
 @dataclass
 class StructDef(Node):
@@ -219,7 +224,7 @@ class Parser:
             return self._parse_run()
         if t.type == TokenType.STRUCT:
             return self._parse_struct()
-        if t.type in (TokenType.FN, TokenType.SEAL, TokenType.DRAFT):
+        if t.type in (TokenType.FN, TokenType.SEAL, TokenType.DRAFT, TokenType.ASYNC):
             return self._parse_function()
         if t.type == TokenType.SEMICOLON:
             self._advance()
@@ -319,11 +324,18 @@ class Parser:
         return StructDef(name=name, fields=fields)
 
     def _parse_function(self) -> FunctionDef:
+        is_async = False
         mode = 'draft'
-        if self._match(TokenType.SEAL):
-            mode = 'seal'; self._advance()
-        elif self._match(TokenType.DRAFT):
-            mode = 'draft'; self._advance()
+        while self._match(TokenType.ASYNC, TokenType.SEAL, TokenType.DRAFT):
+            if self._match(TokenType.ASYNC):
+                is_async = True
+                self._advance()
+            elif self._match(TokenType.SEAL):
+                mode = 'seal'
+                self._advance()
+            elif self._match(TokenType.DRAFT):
+                mode = 'draft'
+                self._advance()
         self._expect(TokenType.FN)
         name = self._expect(TokenType.IDENT).value
         self._expect(TokenType.LPAREN)
@@ -348,7 +360,8 @@ class Parser:
             where_clause = self._parse_expr()
         body = self._parse_block()
         return FunctionDef(name=name, params=params, return_type=return_type,
-                           body=body, mode=mode, where_clause=where_clause)
+                           body=body, mode=mode, where_clause=where_clause,
+                           is_async=is_async)
 
     def _parse_block(self) -> List[Node]:
         self._expect(TokenType.LBRACE)
@@ -432,6 +445,9 @@ class Parser:
         if self._match(TokenType.NOT):
             op = self._advance().value
             return UnaryOp(op=op, operand=self._parse_unary())
+        if self._match(TokenType.AWAIT):
+            self._advance()
+            return AwaitExpr(expr=self._parse_unary())
         return self._parse_postfix()
 
     def _parse_postfix(self) -> Node:
@@ -517,11 +533,15 @@ class Parser:
             return ListLiteral(elements=elements)
 
         if t.type == TokenType.FN:
-            return self._parse_anonymous_function()
+            return self._parse_anonymous_function(is_async=False)
+
+        if t.type == TokenType.ASYNC and self._peek().type == TokenType.FN:
+            self._advance()
+            return self._parse_anonymous_function(is_async=True)
 
         raise ParseError(f"Kutilmagan token: '{t.value}' ({t.type.name})", t)
 
-    def _parse_anonymous_function(self) -> FunctionDef:
+    def _parse_anonymous_function(self, is_async: bool = False) -> FunctionDef:
         self._expect(TokenType.FN)
         name = ""
         if self._match(TokenType.IDENT):
@@ -548,4 +568,5 @@ class Parser:
             where_clause = self._parse_expr()
         body = self._parse_block()
         return FunctionDef(name=name, params=params, return_type=return_type,
-                           body=body, mode='draft', where_clause=where_clause)
+                           body=body, mode='draft', where_clause=where_clause,
+                           is_async=is_async)

@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/salomh46-rgb/Zafira-/releases"><img src="https://img.shields.io/badge/version-v0.4.0--alpha-0ea5e9.svg?style=for-the-badge&logo=codeforces" alt="Version"></a>
+  <a href="https://github.com/salomh46-rgb/Zafira-/releases"><img src="https://img.shields.io/badge/version-v0.5.0--alpha-0ea5e9.svg?style=for-the-badge&logo=codeforces" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/runtime-Python_3.11+-3776ab.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="#"><img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-0284c7.svg?style=for-the-badge" alt="Platform"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-68%2F68_Passing-10b981.svg?style=for-the-badge&logo=checkmarx" alt="Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-115%2F115_Passing-10b981.svg?style=for-the-badge&logo=checkmarx" alt="Tests"></a>
   <a href="vscode-zafira/INSTALL.md"><img src="https://img.shields.io/badge/VS_Code_Extension-v0.1.0-007acc.svg?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="VS Code"></a>
 </p>
 
@@ -36,13 +36,14 @@
 | **Ijro tezligi** | 1x (sekin) | 50–100x | 50–100x | **50–100x (`seal` & hardware rejimida)** |
 | **Dual-Mode (Draft vs Seal)** | ❌ Yo'q | ❌ Faqat qattiq | ❌ Faqat qattiq | **✅ Mavjud (`draft` erkin, `seal` qat'iy)** |
 | **Formal invariantlar (`where`)** | ❌ Yo'q | ⚠️ Tashqi macro | ❌ Yo'q | **✅ Til darajasida statik tekshiriladi** |
+| **Asinxron Dasturlash (`async/await`)** | Alohida `asyncio` | `tokio` kerak | `std::coroutine` | **✅ Til yadrosida native `async`/`await`** |
 | **Python Interop** | Asl til | ❌ Og'ir FFI | ❌ Og'ir C-API | **✅ `import py.torch` (Zero-Overhead)** |
 | **Hardware direktivalari** | Tashqi drayver | Cuda kutubxona | OpenCL/CUDA | **✅ `run @gpu`, `@npu`, `@auto`** |
 | **Xotira xavfsizligi** | GC (sekin) | Borrow Checker | Qo'lda (xavfli) | **✅ Statik tip & Invariant kafolati** |
 
 ### Versiyalar Bo'yicha Imkoniyatlar
 
-| Imkoniyat | v0.1 (Alpha) | v0.2 (Interop) | v0.3 (Transpiler) | v0.4 (AI & ZPM) | v1.0 (Ecosystem) |
+| Imkoniyat | v0.1 (Alpha) | v0.2 (Interop) | v0.3 (Transpiler) | v0.4 (AI & ZPM) | v0.5 (Async & Web) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Lexer (50+ token, Izohlar)** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Pratt Parsing & To'liq AST** | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -53,12 +54,13 @@
 | **Statik Tip Tekshiruvi (Type Checker)** | ❌ | ❌ | ✅ 100% Suite | ✅ | ✅ |
 | **`where` Invariant Verifikatsiyasi** | Faqat runtime | Faqat runtime | ✅ Statik isbot | ✅ | ✅ |
 | **VS Code Sintaksis Kengaytmasi (.vsix)** | ❌ | ❌ | ✅ v0.1.0 VSIX | ✅ | ✅ |
-| **C Transpiler (`zafira compile/transpile`)** | ❌ | ❌ | ✅ To'liq C99 | ✅ | ✅ |
+| **C Transpiler & Standalone Native Binary** | ❌ | ❌ | ✅ C99 | ✅ | **✅ Native `.exe`** |
 | **Standart kutubxona (`math`, `string`, `list`, `io`)** | ❌ | ❌ | ✅ 4 ta modul | ✅ | ✅ |
-| **Paket Menejeri (`zpm`: init, run, test, build)** | ❌ | ❌ | ❌ | **✅ v0.4** | ✅ |
-| **AI & Tensor Dvigateli (`std.ai`, @gpu Tensors)** | ❌ | ❌ | ❌ | **✅ v0.4** | ✅ |
-| **Web & Network (`std.net`, `std.json`, HTTP Server)** | ❌ | ❌ | ❌ | **✅ v0.4** | ✅ |
-| **LLVM JIT / To'liq mustaqil binar** | ❌ | ❌ | ❌ | ⏳ Rejada | **✅ v1.0** |
+| **Paket Menejeri (`zpm`: init, run, test, build)** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **AI & Tensor Dvigateli (`std.ai`, @gpu Tensors)** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Web & Network (`std.net`, `std.json`, HTTP Server)** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Asinxron Dasturlash (`async fn`, `await`)** | ❌ | ❌ | ❌ | ❌ | **✅ v0.5** |
+| **Web Interactive Playground (Online Studio)** | ❌ | ❌ | ❌ | ❌ | **✅ v0.5** |
 
 ---
 

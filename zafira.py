@@ -6,6 +6,7 @@ Ishlatish:
     python zafira.py repl               — Interaktiv rejim (REPL)
     python zafira.py tokens hello.zf    — Tokenlarni ko'rsatadi (debug)
     python zafira.py ast hello.zf       — AST ni ko'rsatadi (debug)
+    python zafira.py playground         — Veb interaktiv playgroundni ochadi
 """
 
 import sys
@@ -31,7 +32,7 @@ from src.transpiler import Transpiler
 from src.package_manager import init_project, run_project, test_project, build_project
 
 
-ZAFIRA_VERSION = "0.1.0-alpha"
+ZAFIRA_VERSION = "0.5.0-alpha"
 
 BANNER = f"""
 ╔══════════════════════════════════════════════╗
@@ -194,27 +195,39 @@ def transpile_file(filepath: str) -> str:
         sys.exit(1)
 
 
-def compile_file(filepath: str):
-    """Zafira faylini C ga transpile qiladi va gcc yordamida binar fayl (.exe) yaratadi"""
-    c_path = transpile_file(filepath)
-    exe_name = os.path.splitext(filepath)[0] + ('.exe' if sys.platform == 'win32' else '')
-
-    gcc_bin = shutil.which('gcc') or shutil.which('clang')
-    if not gcc_bin:
-        print(f"\n[Zafira Ogohlantirish] 'gcc' yoki 'clang' kompyilyatori tizimda topilmadi.")
-        print(f"[Zafira] C kodi tayyor: {c_path}")
-        print(f"[Zafira] Qo'lda kompilyatsiya qilish: gcc {c_path} -o {exe_name} -lm")
-        return
-
-    print(f"\n[Zafira] Kompilyator: {gcc_bin}")
-    print(f"[Zafira] Kompilyatsiya qilinmoqda: {c_path} -> {exe_name} ...")
-    cmd = [gcc_bin, c_path, '-o', exe_name, '-lm']
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    if res.returncode != 0:
-        print(f"[Zafira XATO] Kompilyatsiya xatosi:\n{res.stderr}")
+def compile_file(filepath: str, output_path: Optional[str] = None, standalone: bool = True) -> Optional[str]:
+    """
+    Zafira faylini C ga transpile qiladi va tizimdagi C kompilyatori yordamida
+    mustaqil (.exe / ELF) native binar faylga aylantiradi.
+    """
+    if not os.path.exists(filepath):
+        print(f"[Zafira XATO] Fayl topilmadi: {filepath}")
         sys.exit(1)
 
-    print(f"[Zafira] Muvaffaqiyatli kompilyatsiya qilindi: {exe_name}")
+    c_path = transpile_file(filepath)
+    if not output_path:
+        base, _ = os.path.splitext(filepath)
+        output_path = base + ('.exe' if sys.platform == 'win32' else '')
+
+    from src.transpiler import compile_to_binary, CompilerNotFoundError, CompilationError
+
+    try:
+        res = compile_to_binary(c_path, output_path=output_path)
+        print(f"\n[Zafira] Standalone binar dastur muvaffaqiyatli yaratildi! 🚀")
+        print(f"  ├── 📁 Binar fayl:    {res['binary_path']}")
+        print(f"  ├── ⚙️  Kompilyator:   {res['compiler_path']} ({res['compiler']})")
+        print(f"  ├── ⚡ Hajmi:        {res['size_str']} ({res['size_bytes']:,} bayt)")
+        print(f"  └── 🏃 Ishga tushir:  {res['binary_path']}")
+        return res['binary_path']
+    except CompilerNotFoundError as e:
+        print(f"\n{e}")
+        return None
+    except CompilationError as e:
+        print(f"\n[Zafira XATO] {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n[Zafira XATO] Binar yaratishda kutilmagan xato: {e}")
+        sys.exit(1)
 
 
 def main():
@@ -228,10 +241,11 @@ def main():
         print("  python zafira.py build [loyiha]       — Loyihani transpilyatsiya qilish (C ga)")
         print("  python zafira.py test [loyiha]        — Loyiha testlarini ishga tushirish")
         print("  python zafira.py transpile <fayl.zf>  — C kodiga aylantir (.c)")
-        print("  python zafira.py compile <fayl.zf>    — Binar dasturga kompilyatsiya qil (.exe)")
+        print("  python zafira.py compile <fayl.zf> [-o <chiqish.exe>] [--standalone] — Binar dasturga kompilyatsiya qil (.exe)")
         print("  python zafira.py repl                 — Interaktiv rejim")
         print("  python zafira.py tokens <fayl.zf>     — Tokenlarni ko'rsat")
         print("  python zafira.py ast <fayl.zf>        — AST ni ko'rsat")
+        print("  python zafira.py playground [--port]  — Web Interactive Playground (Online Studio)")
         return
 
     command = args[0]
@@ -276,10 +290,52 @@ def main():
         transpile_file(args[1])
 
     elif command == 'compile':
-        if len(args) < 2:
-            print("[Zafira] Fayl nomi ko'rsatilmagan: python zafira.py compile <fayl.zf>")
+        compile_args = args[1:]
+        if not compile_args:
+            print("[Zafira] Fayl nomi ko'rsatilmagan:")
+            print("  python zafira.py compile <fayl.zf> [-o <chiqish.exe>] [--standalone / --native]")
             sys.exit(1)
-        compile_file(args[1])
+
+        target_file = None
+        output_file = None
+        standalone = True
+
+        i = 0
+        while i < len(compile_args):
+            arg = compile_args[i]
+            if arg in ('-o', '--output'):
+                if i + 1 < len(compile_args):
+                    output_file = compile_args[i + 1]
+                    i += 2
+                    continue
+                else:
+                    print("[Zafira XATO] -o parametri uchun chiqish fayli ko'rsatilmadi!")
+                    sys.exit(1)
+            elif arg.startswith('-o='):
+                output_file = arg[3:]
+                i += 1
+                continue
+            elif arg.startswith('--output='):
+                output_file = arg[9:]
+                i += 1
+                continue
+            elif arg in ('--standalone', '-s', '--native', '-n'):
+                standalone = True
+                i += 1
+                continue
+            elif not target_file and not arg.startswith('-'):
+                target_file = arg
+                i += 1
+                continue
+            else:
+                i += 1
+
+        if not target_file:
+            print("[Zafira] Fayl nomi ko'rsatilmagan:")
+            print("  python zafira.py compile <fayl.zf> [-o <chiqish.exe>] [--standalone]")
+            sys.exit(1)
+
+        compile_file(target_file, output_path=output_file, standalone=standalone)
 
     elif command == 'repl':
         repl()
@@ -295,6 +351,32 @@ def main():
             print("[Zafira] Fayl nomi ko'rsatilmagan")
             sys.exit(1)
         show_ast(args[1])
+
+    elif command == 'playground':
+        port = 5000
+        open_browser = True
+        idx = 1
+        while idx < len(args):
+            arg = args[idx]
+            if arg in ('--port', '-p') and idx + 1 < len(args):
+                try:
+                    port = int(args[idx + 1])
+                    idx += 1
+                except ValueError:
+                    pass
+            elif arg.startswith('--port='):
+                try:
+                    port = int(arg.split('=', 1)[1])
+                except ValueError:
+                    pass
+            elif arg == '--no-browser':
+                open_browser = False
+            elif arg.isdigit():
+                port = int(arg)
+            idx += 1
+
+        from src.playground_server import start_playground_server
+        start_playground_server(port=port, open_browser=open_browser)
 
     else:
         print(f"[Zafira] Noma'lum buyruq: '{command}'")

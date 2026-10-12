@@ -41,6 +41,8 @@ class TokenType(Enum):
     WHERE      = auto()   # where shart (invariant)
     RUN        = auto()   # run @gpu { ... }
     AT         = auto()   # @gpu, @npu, @auto
+    ASYNC      = auto()   # async fn ...
+    AWAIT      = auto()   # await ...
 
     # === OPERATORLAR ===
     PLUS       = auto()   # +
@@ -99,6 +101,8 @@ KEYWORDS = {
     'draft': TokenType.DRAFT,
     'where': TokenType.WHERE,
     'run': TokenType.RUN,
+    'async': TokenType.ASYNC,
+    'await': TokenType.AWAIT,
     'and': TokenType.AND,
     'or': TokenType.OR,
     'not': TokenType.NOT,
