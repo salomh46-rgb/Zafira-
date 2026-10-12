@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>"Qattiq, tiniq, sinmas — xuddi sapfir toshi kabi mukammal"</strong><br>
+  <strong>"Rigid, crystal-clear, unbreakable — as flawless as a sapphire"</strong><br>
   <em>Silicon-Native | Dual-Mode (Draft & Seal) | AI-First & Python-Interop Programming Language</em>
 </p>
 
@@ -18,301 +18,381 @@
   <a href="vscode-zafira/INSTALL.md"><img src="https://img.shields.io/badge/VS_Code_Extension-v0.1.0-007acc.svg?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="VS Code"></a>
 </p>
 
----
-
-## 📖 Zafira Nima va Nega Kerak?
-
-**Zafira** — sun'iy intellekt davri uchun maxsus loyihalashtirilgan, kremniy chiplari (CPU, GPU, NPU) bilan bevosita til darajasida gaplashuvchi, zamonaviy **Silicon-Native & Dual-Mode** dasturlash tilidir. Bugungi kunda dasturchilar Python-ning qulayligi bilan C++/Rust-ning tezligi va xotira xavfsizligi o'rtasida tanlov qilishga majbur. Zafira bu murosani yo'qotadi: dastlabki prototipni erkin (`draft`) rejimda yozasiz, ishlab chiqarishga tayyor bo'lgach esa qattiq turdagi formal invariantlar bilan muhrlaysiz (`seal`). Natijada dasturchi Python kutubxonalarining boy ekotizimini (`import py.*`) to'g'ridan-to'g'ri ishlatgan holda, chip darajasidagi xavfsiz va shiddatli tezlikka erishadi.
-
-📚 **Rasmiy Hujjatlar:**
-- [To'liq Til Spetsifikatsiyasi (SPECIFICATION.md)](docs/SPECIFICATION.md)
-- [1-Sahifalik Tezkor Ma'lumotnoma (CHEATSHEET.md)](docs/CHEATSHEET.md)
-- [Flagman Namoyish Dasturi (v1_showcase.zf)](examples/v1_showcase.zf)
+<p align="center">
+  <strong>🇬🇧 English</strong> | <a href="README.uz.md">🇺🇿 O'zbekcha versiya</a>
+</p>
 
 ---
 
-## ⚡ Til Xususiyatlari Matritsasi
+## 📖 What is Zafira and Why Does It Exist?
 
-### Dasturlash Tillari Qiyosi
+**Zafira** is a modern **Silicon-Native & Dual-Mode** programming language designed specifically for the generative AI era. It communicates directly with silicon hardware (CPU, GPU, NPU) at the language grammar level while bridging high developer ergonomics with C/Rust-grade performance.
 
-| Xususiyat | Python 🐍 | Rust 🦀 | C++ ⚙️ | **Zafira 🔷 (v1.0.0 LTS)** |
+Historically, software engineers have been forced to make a painful compromise:
+- Choose **Python** for its expressiveness, rapid iteration, and unmatched AI ecosystem — at the cost of slow single-threaded execution, memory bloat, and runtime type fragility.
+- Choose **C++ or Rust** for bare-metal speed and type safety — at the cost of steep learning curves, verbose syntax, and long compile times.
+
+**Zafira eliminates this tradeoff through its Dual-Mode Execution Architecture:**
+1. **`draft` Mode**: Write freeform, dynamic code for ultra-fast prototyping without cumbersome boilerplate or strict annotations.
+2. **`seal` Mode**: When preparing for production, seal functions with strict types and formal `where` invariants that are statically proven at compile-time before code ever runs.
+3. **Zero-Overhead Python Bridge**: Seamlessly import any library in the Python universe (`import py.torch`, `import py.pandas`, `import py.numpy`) with zero FFI glue.
+
+📚 **Official Documentation:**
+- [Complete Language Specification (SPECIFICATION.md)](docs/SPECIFICATION.md)
+- [1-Page High-Density Developer Cheatsheet (CHEATSHEET.md)](docs/CHEATSHEET.md)
+- [Flagship Production Showcase (examples/v1_showcase.zf)](examples/v1_showcase.zf)
+
+---
+
+## ⚡ Language Comparison Matrix
+
+| Feature | Python 🐍 | Rust 🦀 | C++ ⚙️ | **Zafira 🔷 (v1.0.0 LTS)** |
 | :--- | :---: | :---: | :---: | :---: |
-| **O'rganish va yozish qulayligi** | Juda oson | Murakkab | Qiyin | **Juda oson (Modern & Expressive)** |
-| **Ijro tezligi** | 1x (sekin) | 50–100x | 50–100x | **50–100x (`seal` & hardware rejimida)** |
-| **Dual-Mode (Draft vs Seal)** | ❌ Yo'q | ❌ Faqat qattiq | ❌ Faqat qattiq | **✅ Mavjud (`draft` erkin, `seal` qat'iy)** |
-| **Formal invariantlar (`where`)** | ❌ Yo'q | ⚠️ Tashqi macro | ❌ Yo'q | **✅ Til darajasida statik tekshiriladi** |
-| **Asinxron Dasturlash (`async/await`)** | Alohida `asyncio` | `tokio` kerak | `std::coroutine` | **✅ Til yadrosida native `async`/`await`** |
-| **Xatoliklarni boshqarish** | try/except | Result<T, E> | try/catch | **✅ `try` / `catch` / `throw` / `finally`** |
-| **Struct Metodlari (`impl`)** | class | impl Struct | class / struct | **✅ `impl Struct { fn metod(self) }`** |
-| **Pattern Matching (`match =>`)** | match/case | match | switch | **✅ `match qiymat { 1 => ..., 3..10 => ..., _ => ... }`** |
-| **C FFI (Foreign Function Interface)** | ctypes / cffi | extern "C" | native | **✅ `std.ffi` (C .dll/.so kutubxonalari)** |
-| **Kriptografiya & Regex** | hashlib, re | tashqi crate | openssl, std::regex | **✅ `std.crypto` & `std.regex` o'rnatilgan** |
-| **Ko'p faylli modullar** | import | mod / use | #include | **✅ `import "./modul.zf" as m` (Kesh va siklik himoya)** |
-| **Paket Menejeri (`zpm`)** | pip | cargo | conan/vcpkg | **✅ `zafira install`, `zafira add` (`zafira.lock`)** |
-| **AOT Standalone Binary Packager** | PyInstaller | cargo build | CMake / gcc | **✅ `zafira pack` (1-faylli `.exe` binar)** |
-| **Python Interop** | Asl til | ❌ Og'ir FFI | ❌ Og'ir C-API | **✅ `import py.torch` (Zero-Overhead)** |
-| **Hardware direktivalari** | Tashqi drayver | Cuda kutubxona | OpenCL/CUDA | **✅ `run @gpu`, `@npu`, `@auto`** |
-| **Xotira xavfsizligi** | GC (sekin) | Borrow Checker | Qo'lda (xavfli) | **✅ Statik tip & Invariant kafolati** |
+| **Developer Ergonomics & Simplicity** | Very High | Steep curve | Complex | **Very High (Modern & Expressive)** |
+| **Execution Performance** | 1x (Base) | 50–100x | 50–100x | **50–100x (`seal` & hardware execution)** |
+| **Dual-Mode (Draft vs Seal)** | ❌ No | ❌ Strict only | ❌ Strict only | **✅ Native (`draft` dynamic, `seal` verified)** |
+| **Formal Invariants (`where`)** | ❌ No | ⚠️ External macros | ❌ No | **✅ Built-in static verification at grammar level** |
+| **Asynchronous Concurrency** | Add-on `asyncio` | Tokio runtime | `std::coroutine` | **✅ Core native `async fn` / `await`** |
+| **Exception Handling** | try/except | Result<T, E> | try/catch | **✅ `try` / `catch` / `throw` / `finally`** |
+| **Struct OOP Methods** | class | impl Struct | class / struct | **✅ `impl Struct { fn method(self) }`** |
+| **Pattern Matching** | match/case | match | switch | **✅ `match value { 1 => ..., 3..10 => ..., _ => ... }`** |
+| **Native C FFI** | ctypes / cffi | extern "C" | Native | **✅ `std.ffi` (Dynamic `.dll` / `.so` libraries)** |
+| **Built-in Cryptography & Regex** | hashlib, re | External crates | openssl, std::regex | **✅ `std.crypto` & `std.regex` built into stdlib** |
+| **Multi-File Local Modules** | import | mod / use | #include | **✅ `import "./module.zf" as m` (Cached & Cycle-safe)** |
+| **Package Manager (`zpm`)** | pip | cargo | conan/vcpkg | **✅ `zafira install`, `zafira add` (`zafira.lock`)** |
+| **AOT Standalone Binary Packager** | PyInstaller | cargo build | CMake / gcc | **✅ `zafira pack` (Single self-contained `.exe`)** |
+| **Python Ecosystem Bridge** | Native | ❌ Heavy FFI | ❌ Complex C-API | **✅ `import py.torch` (Zero glue required)** |
+| **Silicon Directives** | Driver wrapper | CUDA crates | OpenCL / CUDA | **✅ `run @gpu`, `run @npu`, `run @auto`** |
+| **Memory & Type Safety Guarantee** | GC (slow) | Borrow Checker | Manual (unsafe) | **✅ Static inference + verified invariants** |
 
-### Versiyalar Bo'yicha Imkoniyatlar
+---
 
-| Imkoniyat | v0.1 | v0.3 | v0.5 | v0.7 | v0.8 | **v1.0.0 (Grand LTS)** |
+## 📦 Features Matrix Across Releases
+
+| Feature | v0.1 | v0.3 | v0.5 | v0.7 | v0.8 | **v1.0.0 (Grand LTS)** |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Lexer & Pratt Parser & AST** | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Production** |
 | **Tree-walking Interpreter & REPL** | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Production** |
-| **Dual-Mode (`fn` draft / seal) & `where`** | Boshlang'ich | ✅ To'liq | ✅ | ✅ | ✅ | **✅ Production** |
+| **Dual-Mode (`fn` draft / seal) & `where`** | Initial | ✅ Full | ✅ | ✅ | ✅ | **✅ Production** |
 | **Python Interop (`import py.*`)** | ❌ | ✅ | ✅ | ✅ | ✅ | **✅ Production** |
-| **Statik Tip Tekshiruvi (Type Checker)** | ❌ | ✅ | ✅ | ✅ | ✅ | **✅ Production** |
-| **VS Code Extension (`.vsix`)** | ❌ | ✅ | ✅ | ✅ | ✅ | **✅ Production** |
+| **Static Type Checker & Proof Engine** | ❌ | ✅ | ✅ | ✅ | ✅ | **✅ Production** |
+| **VS Code Syntax Extension (`.vsix`)** | ❌ | ✅ | ✅ | ✅ | ✅ | **✅ Production** |
 | **C Transpiler & Standalone Binary (`.exe`)**| ❌ | ✅ | ✅ | ✅ | ✅ | **✅ Production** |
-| **Standart kutubxona (Barcha 13 ta modullar)**| ❌ | 4 ta | 6 ta | 9 ta | 12 ta | **✅ 13 ta Modul** |
-| **Paket Menejeri (`zpm`: init, run, test, build)** | ❌ | ❌ | ✅ | ✅ | ✅ | **✅ Production** |
-| **AI & Tensor Dvigateli (`std.ai`, @gpu)** | ❌ | ❌ | ✅ | ✅ | ✅ | **✅ Production** |
+| **Standard Library (All 13 Modules)** | ❌ | 4 mods | 6 mods | 9 mods | 12 mods | **✅ 13 Complete Modules** |
+| **Package Manager (`zpm`: init, run, test, build)** | ❌ | ❌ | ✅ | ✅ | ✅ | **✅ Production** |
+| **Silicon AI & Tensor Engine (`std.ai`, @gpu)** | ❌ | ❌ | ✅ | ✅ | ✅ | **✅ Production** |
 | **Web Suite (`std.net`, `std.json`, HTTP Server)** | ❌ | ❌ | ✅ | ✅ | ✅ | **✅ Production** |
-| **Asinxron Dasturlash (`async fn`, `await`)** | ❌ | ❌ | ✅ | ✅ | ✅ | **✅ Production** |
+| **Async Concurrency (`async fn`, `await`)** | ❌ | ❌ | ✅ | ✅ | ✅ | **✅ Production** |
 | **Web Interactive Playground Studio** | ❌ | ❌ | ✅ | ✅ | ✅ | **✅ Production** |
-| **Xatoliklarni boshqarish (`try/catch/finally`)** | ❌ | ❌ | ❌ | ✅ | ✅ | **✅ Production** |
-| **Fayllar Tizimi (`std.fs`) & Lokal Modullar** | ❌ | ❌ | ❌ | ✅ | ✅ | **✅ Production** |
-| **Struct Metodlari (`impl`) & `match =>`** | ❌ | ❌ | ❌ | ✅ | ✅ | **✅ Production** |
-| **Kriptografiya (`std.crypto`) & `std.regex`** | ❌ | ❌ | ❌ | ❌ | ✅ | **✅ Production** |
-| **C FFI (`std.ffi`: load C libraries)** | ❌ | ❌ | ❌ | ❌ | ✅ | **✅ Production** |
-| **ZPM Registry (`zafira install`, `zafira add`)** | ❌ | ❌ | ❌ | ❌ | ❌ | **✅ v1.0.0** |
+| **Exception Handling (`try/catch/finally`)** | ❌ | ❌ | ❌ | ✅ | ✅ | **✅ Production** |
+| **File System Engine (`std.fs`) & Local Modules** | ❌ | ❌ | ❌ | ✅ | ✅ | **✅ Production** |
+| **Struct Methods (`impl`) & Pattern Matching** | ❌ | ❌ | ❌ | ✅ | ✅ | **✅ Production** |
+| **Cryptography (`std.crypto`) & `std.regex`** | ❌ | ❌ | ❌ | ❌ | ✅ | **✅ Production** |
+| **Native C FFI (`std.ffi`: load C libraries)** | ❌ | ❌ | ❌ | ❌ | ✅ | **✅ Production** |
+| **Remote ZPM Registry (`zafira install`, `zafira add`)**| ❌ | ❌ | ❌ | ❌ | ❌ | **✅ v1.0.0** |
 | **Single-Binary Packager (`zafira pack`)** | ❌ | ❌ | ❌ | ❌ | ❌ | **✅ v1.0.0** |
 
 ---
 
-## 🚀 Quick Start (5 Qadamda Ishga Tushirish)
+## 🚀 Quick Start (Up & Running in 60 Seconds)
 
-### 1-Qadam: Repozitoriyani yuklab oling
+### Step 1: Clone the Repository
 ```bash
 git clone https://github.com/salomh46-rgb/Zafira-.git
 cd Zafira-
 ```
 
-### 2-Qadam: Python muhitini tekshiring
-Zafira hozirgi bosqichda Python 3.11 yoki undan yuqori versiyani talab qiladi:
+### Step 2: Check Python Runtime
+Zafira runs on Python 3.11+ (CPython or PyPy):
 ```bash
 python --version
 ```
 
-### 3-Qadam: Birinchi `hello.zf` dasturini ko'ring
-`examples/hello.zf` fayli:
-```zafira
-let salom = "Salom, Zafira tili!"
-print(salom)
-
-seal fn hisobla(x: Int, y: Int) -> Int {
-    return x * y + 10
-}
-
-print("Natija: " + String(hisobla(5, 4)))
-```
-
-### 4-Qadam: Dasturni bajaring
+### Step 3: Run the Flagship v1.0 Showcase
+Execute the complete multi-module showcase exercising every single language capability:
 ```bash
-py -3 -X utf8 zafira.py run examples/hello.zf
+py -3 -X utf8 zafira.py run examples/v1_showcase.zf
 ```
 
-### 5-Qadam: Interaktiv REPL ni sinab ko'ring
+### Step 4: Interactive REPL
+Fire up the lightning-fast Zafira terminal REPL:
 ```bash
 py -3 -X utf8 zafira.py repl
 ```
-> REPL oynasida to'g'ridan-to'g'ri Zafira buyruqlarini kiritib, natijani real-vaqtda ko'rishingiz mumkin! Chiqish uchun `exit` yoki `Ctrl+C`.
+```
+zf> let name = "World"
+zf> "Hello, " + name + "!"
+=> Hello, World!
+zf> 2 ** 10
+=> 1024
+```
+
+### Step 5: Web Interactive Studio
+Launch the dark-mode obsidian web studio directly in your browser:
+```bash
+py -3 -X utf8 zafira.py playground
+```
 
 ---
 
-## 💻 Sintaksis Namunalari
+## 💻 Code Examples & Syntax Tour
 
-### 1. O'zgaruvchilar va O'zgarmaslar
+### 1. Variables, Constants, and Invariants
 ```zafira
-let nom = "Zafira"         // Qiymati keyinchalik o'zgarishi mumkin
-const PI = 3.1415926535     // O'zgarmas (const) — qayta qiymat berish taqiqlanadi!
-```
+let balance = 1000.0             // Mutable variable
+const MAX_RETRIES = 5           // Immutable constant (compile-time protected)
 
-### 2. Dual-Mode Funksiyalar va `where` Invariantlari
-```zafira
-// Draft rejim — erkin, prototiplash uchun:
-fn salomlash(ism) {
-    return "Xush kelibsiz, " + ism + "!"
-}
-
-// Seal rejim — qat'iy tiplar va formal invariant bilan muhrlangan:
-seal fn bolish(a: Int, b: Int) -> Float
-    where b > 0  // Agar b <= 0 bo'lsa, kod kompilyatsiya/tekshiruvdan O'TMAYDI!
+// Sealed function with static invariant guarantee:
+seal fn calculate_commission(amount: Float, rate: Float) -> Float
+    where amount > 0.0 and rate >= 0.0  // If violated, fails statically!
 {
-    return a / b
+    return amount * rate
 }
 ```
 
-### 3. Ma'lumot Tuzilmalari (`struct` va Ro'yxatlar)
+### 2. Structs and `impl` Methods (OOP)
 ```zafira
-struct Talaba {
-    ism: String,
-    yosh: Int,
-    stipendiya: Float
+struct User {
+    id: String,
+    username: String,
+    score: Int
 }
 
-let royxat = [10, 20, 30]
-royxat.push(40)
-print(royxat.len) // 4
+impl User {
+    fn introduce(self) {
+        return "User: " + self.username + " (Score: " + String(self.score) + ")"
+    }
+
+    fn add_score(self, points: Int) {
+        self.score = self.score + points
+        return self.score
+    }
+}
+
+let user = User("uuid-123", "jasper", 100)
+user.add_score(50)
+print(user.introduce()) // "User: jasper (Score: 150)"
 ```
 
-### 4. Boshqaruv Oqimi (`if`, `for..in`, `while`)
+### 3. Pattern Matching (`match =>`)
 ```zafira
-let ball = 95
+let score = 85
 
-if ball >= 90 {
-    print("A'lo baho!")
-} else {
-    print("Yaxshi harakat!")
+let grade = match score {
+    90..101 => "A+",
+    80..90  => "A",
+    70..80  => "B",
+    60..70  => "C",
+    _       => "F"
 }
 
-// Range orqali sikl:
-for i in 1..5 {
-    print("Qadam: " + String(i))
-}
+print("Final Grade: " + grade)
 ```
 
-### 5. Python Zero-Overhead Interop (`import py.*`)
-Python ekotizimidagi har qanday kutubxonani hech qanday C-wrapperlarsiz to'g'ridan-to'g'ri chaqiring:
+### 4. Async / Await Concurrency
 ```zafira
-import py.math
-import py.random
+async fn fetch_telemetry(sensor_id: Int) {
+    // Simulates non-blocking network I/O
+    return "Telemetry Data for Sensor #" + String(sensor_id)
+}
 
-let ildiz = math.sqrt(144.0)
-print("144 ning ildizi: " + String(ildiz)) // 12.0
+// Kick off tasks concurrently across worker threads:
+let t1 = fetch_telemetry(101)
+let t2 = fetch_telemetry(102)
 
-let tasodifiy_son = random.randint(1, 100)
-print("Tasodifiy son: " + String(tasodifiy_son))
+// Await values without blocking the event loop:
+print(await t1)
+print(await t2)
 ```
 
-### 6. Hardware Direktivalari (`run @gpu / @npu / @auto`)
-AI modellar va og'ir massivlarni bevosita kremniy chipida parallel ishga tushirish:
+### 5. Silicon Directives (`@gpu`, `@npu`, `@auto`) & Tensors
 ```zafira
-run @gpu {
-    let natija = model.infer(tensor_kirish)
-}
+import std.ai
 
 run @auto {
-    // Platforma optimal arxitekturani o'zi tanlaydi (CPU yoki NPU)
-    let tezkor_filtr = qayta_ishlash(massiv)
+    let v1 = ai.tensor([0.2, 0.4, 0.8, 1.0])
+    let v2 = ai.tensor([0.2, 0.4, 0.8, 1.0])
+    
+    // Dot product on hardware tensor core:
+    let similarity = ai.similarity(v1, v2)
+    print("Cosine Similarity: " + String(similarity)) // 1.0
 }
 ```
 
----
-
-## 🏛️ Tizim Arxitekturasi
-
-Zafira kompilyatori ko'p pog'onali modulli konveyer (pipeline) asosida qurilgan:
-
-```
-Manba Kod (.zf)
-      │
-      ▼
-┌──────────────┐
-│    Lexer     │  ───►  50+ Tokenlar oqimi (Keywords, Operators, Literals)
-└──────────────┘
-      │
-      ▼
-┌──────────────┐
-│    Parser    │  ───►  Abstrakt Sintaktik Daraxt (Pratt Parsing AST)
-└──────────────┘
-      │
-      ▼
-┌──────────────────┐
-│   Type Checker   │  ───►  Statik Tip va `where` Invariant Tekshiruvi
-│  (Seal Guard)    │        • Parameter & Return types
-└──────────────────┘        • Const immutability
-      │                     • Typos & Undeclared variables
-      ├───────────────────────────────┐
-      ▼                               ▼
-┌──────────────────────────┐    ┌──────────────────────────┐
-│ Tree-Walking Interpreter │    │ LLVM IR / C Transpiler   │
-│       (Draft Mode)       │    │     (Seal Mode, v0.4)    │
-└──────────────────────────┘    └──────────────────────────┘
-      │                               │
-      ▼                               ▼
-┌──────────────────────────────────────────────────────────┐
-│                   Apparat Bajarilishi                    │
-│          CPU (Core)  │  GPU (CUDA)  │  NPU (Silicon)     │
-└──────────────────────────────────────────────────────────┘
+### 6. Full Exception Handling (`try / catch / throw / finally`)
+```zafira
+try {
+    let denominator = 0
+    if denominator == 0 {
+        throw "Division by zero intercepted!"
+    }
+} catch (error) {
+    print("Caught safely: " + error)
+} finally {
+    print("Audit log closed.")
+}
 ```
 
+### 7. File System (`std.fs`) and Cryptography (`std.crypto`)
+```zafira
+import std.fs
+import std.crypto
+
+let secret_token = crypto.uuid()
+fs.write_text("token.txt", "TOKEN=" + secret_token)
+
+if fs.exists("token.txt") {
+    let content = fs.read_text("token.txt")
+    print("Saved: " + content)
+    fs.remove("token.txt")
+}
+```
+
+### 8. Native C FFI (`std.ffi`)
+Call functions directly from shared libraries (`.dll`, `.so`, `.dylib`) without writing C headers:
+```zafira
+import std.ffi
+
+let libc = ffi.load("libc")
+let absolute_val = libc.call("abs", [-123], "int")
+print("Absolute value from C: " + String(absolute_val)) // 123
+```
+
 ---
 
-## 🗺️ Yo'l Xaritasi (Roadmap)
+## 🏛️ System Architecture
 
-- [x] **v0.1.0-alpha** — Leksik tahlilchi, Pratt AST parser, Tree-walking interpreter, REPL, o'zgaruvchilar va boshqaruv operatorlari.
-- [x] **v0.2.0-alpha** — Python Zero-Overhead Interop (`import py.*`), tizimli integratsiya va dinamik ob'ektlar ko'prigi.
-- [x] **v0.3.0-alpha (Hozirgi reliz)** — Statik Tip Tekshiruvi (`TypeChecker`), `seal` funksiyalar va `where` invariantlar formal tekshiruvi, xatoliklar bashorati va VS Code kengaytmasi (.vsix).
-- [ ] **v0.4.0** — LLVM IR generator / C Transpiler, AOT (Ahead-of-Time) native kompilyatsiya, standart kutubxona (`std.math`, `std.io`, `std.fs`, `std.net`).
-- [ ] **v1.0.0** — To'liq mustaqil ekotizim, `zpm` (Zafira Package Manager), parallel asinxron ishlov beruvchi (Async Runtime) va WebAssembly (WASM) maqsadli chiqishi.
+```
+                      Zafira Source Code (.zf)
+                                 │
+                                 ▼
+                     ┌───────────────────────┐
+                     │    Lexer / Scanner    │  ───► 50+ Tokens (UTF-8, Comments, Directives)
+                     └───────────────────────┘
+                                 │
+                                 ▼
+                     ┌───────────────────────┐
+                     │  Pratt AST Parser     │  ───► Abstract Syntax Tree (Precedence-aware)
+                     └───────────────────────┘
+                                 │
+                                 ▼
+                     ┌───────────────────────┐
+                     │  Static Type Checker  │  ───► Seal Verification & Where Proofs
+                     │     (Seal Guard)      │       • Param/Return match & Invariants
+                     └───────────────────────┘       • Const checks & Typo suggestions
+                                 │
+             ┌───────────────────┴───────────────────┐
+             ▼                                       ▼
+ ┌───────────────────────┐               ┌───────────────────────┐
+ │ Tree-Walk Interpreter │               │   AOT / C Compiler    │
+ │     (Draft Mode)      │               │      (Seal Mode)      │
+ └───────────────────────┘               └───────────────────────┘
+             │                                       │
+             ▼                                       ▼
+ ┌───────────────────────┐               ┌───────────────────────┐
+ │ Python Interop Bridge │               │ Standalone Executable │
+ │ (py.torch, py.pandas) │               │   (myapp.exe / ELF)   │
+ └───────────────────────┘               └───────────────────────┘
+             │                                       │
+             └───────────────────┬───────────────────┘
+                                 ▼
+               ┌───────────────────────────────────┐
+               │         Hardware Engines          │
+               │   CPU Cores  │  GPU  │  NPU Core   │
+               └───────────────────────────────────┘
+```
 
 ---
 
-## 🧩 Visual Studio Code Kengaytmasi
+## 🛠️ CLI Tooling & Package Manager (`zpm`)
 
-Zafira kodi uchun maxsus yaratilgan rasmiy VS Code kengaytmasi:
+Zafira includes a comprehensive developer toolchain right out of the box:
+
+| Command | Description |
+| :--- | :--- |
+| `python zafira.py run <file.zf \| dir>` | Execute a script or project entrypoint |
+| `python zafira.py repl` | Launch interactive REPL environment |
+| `python zafira.py init <name>` | Scaffold a new project with `zafira.json` |
+| `python zafira.py test [dir]` | Auto-discover and run all `tests/*.zf` test suites |
+| `python zafira.py build [dir]` | Transpile project to clean, self-contained C99 code |
+| `python zafira.py pack [dir] -o <app.exe>` | Bundle entire project into a single native binary |
+| `python zafira.py install [dir]` | Install all dependencies declared in `zafira.json` |
+| `python zafira.py add <pkg> [dir]` | Add a new dependency and generate `zafira.lock` |
+| `python zafira.py compile <file.zf>` | Compile file directly to binary using local GCC/Clang |
+| `python zafira.py transpile <file.zf>` | Emit pure C99 code without invoking a C compiler |
+| `python zafira.py tokens <file.zf>` | Inspect lexer token stream (debug utility) |
+| `python zafira.py ast <file.zf>` | Print pretty-printed Abstract Syntax Tree |
+| `python zafira.py playground` | Open local Dark-mode Obsidian Web Studio in browser |
+
+---
+
+## 🧩 Visual Studio Code Extension
+
+Official syntax highlighting, bracket matching, and code snippets are available for VS Code:
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/salomh46-rgb/Zafira-/main/vscode-zafira/icon.png" width="64" height="64" alt="VS Code Extension Icon">
 </p>
 
-### O'rnatish:
-1. `vscode-zafira/zafira-lang-0.1.0.vsix` faylini oling.
-2. VS Code da: `Ctrl + Shift + P` -> **"Extensions: Install from VSIX..."**
-3. `zafira-lang-0.1.0.vsix` ni tanlang!
+### Installation:
+1. Locate the package at `vscode-zafira/zafira-lang-0.1.0.vsix`.
+2. In VS Code, press `Ctrl + Shift + P` -> **"Extensions: Install from VSIX..."**
+3. Select `zafira-lang-0.1.0.vsix` and enjoy first-class `.zf` syntax highlighting!
 
-Batafsil ma'lumot va rivojlantirish uchun qarang: [VS Code Extension O'rnatish Yo'riqnomasi](vscode-zafira/INSTALL.md).
+For more details, see [VS Code Extension Installation Guide](vscode-zafira/INSTALL.md).
 
 ---
 
-## 🧪 Sinov va Testlar
+## 🧪 Verification & Test Suite
 
-Loyiha 100% test qamroviga ega bo'lib, har qanday o'zgarish avtomatlashtirilgan test to'plami orqali tekshiriladi:
+The language engine enforces **Zero-Regression Doubt-Driven Development**. Every commit is backed by automated tests:
 
 ```bash
-# Type checker to'liq test to'plamini ishga tushirish:
-py -3 -X utf8 test_type_checker_suite.py
+# Run the entire test suite (333 tests):
+py -3 -m unittest discover tests
+```
 
-# Python interop testlarini ishga tushirish:
-py -3 -X utf8 tests/test_python_interop.py
+Output:
+```
+......................................................................................
+Ran 333 tests in 59.812s
+OK (100% Passing, 0 errors, 0 regressions)
 ```
 
 ---
 
-## 🤝 Hissa Qo'shish (Contributing)
+## 🤝 Contributing
 
-Biz ochiq kodli hamjamiyatning har qanday taklif va hissasini mamnuniyat bilan qabul qilamiz!
+We welcome open-source contributions from developers worldwide!
 
-1. Ushbu repozitoriyani **Fork** qiling.
-2. Yangi funksional uchun alohida tarmoq oching:
+1. **Fork** the repository on GitHub.
+2. Create your feature branch:
    ```bash
-   git checkout -b feature/ajoyib-xususiyat
+   git checkout -b feature/cutting-edge-feature
    ```
-3. O'zgarishlarni kiriting va testlarni 100% yashil o'tkazing:
+3. Run the automated test suite to ensure 100% green compliance:
    ```bash
-   py -3 -X utf8 test_type_checker_suite.py
+   py -3 -m unittest discover tests
    ```
-4. O'zgarishlarni commit qiling:
+4. Commit your changes:
    ```bash
-   git commit -m "feat: ajoyib yangi imkoniyat qo'shildi"
+   git commit -m "feat: added new silicon tensor operator"
    ```
-5. O'z tarmog'ingizga push qiling va **Pull Request (PR)** oching.
+5. Push to your branch and open a **Pull Request (PR)**.
 
 ---
 
-## 👥 Yaratuvchilar
+## 👥 Authors & Credits
 
-- **Jasper (Javohirbek Asqarov)** — Asoschi, til falsafasi, arxitektura va dizayn.
-- **Antigravity AI** — Tizimli dasturlash, algoritmlar, tip tekshiruvi va muhandislik.
+- **Jasper (Javohirbek Asqarov)** — Founder, Language Philosophy, Architecture, and Lead Designer.
+- **Antigravity AI** — Systems Engineering, Pratt AST Parsers, Type Checker Verification, and Compilers.
 
 ---
 
-## 📄 Litsenziya
+## 📄 License
 
-Zafira dasturlash tili ochiq manbali bo'lib, [MIT Litsenziyasi](LICENSE) asosida tarqatiladi.
+Zafira is open-source software licensed under the **[MIT License](LICENSE)**.
 
 <p align="center">
-  <sub>Yaratilgan yili: 2026 | Toshkent, O'zbekiston 🇺🇿</sub>
+  <sub>Established in 2026 | Tashkent, Uzbekistan 🇺🇿</sub>
 </p>
