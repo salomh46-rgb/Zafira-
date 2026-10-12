@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/salomh46-rgb/Zafira-/releases"><img src="https://img.shields.io/badge/version-v0.3.0--alpha-0ea5e9.svg?style=for-the-badge&logo=codeforces" alt="Version"></a>
+  <a href="https://github.com/salomh46-rgb/Zafira-/releases"><img src="https://img.shields.io/badge/version-v0.4.0--alpha-0ea5e9.svg?style=for-the-badge&logo=codeforces" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/runtime-Python_3.11+-3776ab.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="#"><img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-0284c7.svg?style=for-the-badge" alt="Platform"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-100%25_Passing-10b981.svg?style=for-the-badge&logo=checkmarx" alt="Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-68%2F68_Passing-10b981.svg?style=for-the-badge&logo=checkmarx" alt="Tests"></a>
   <a href="vscode-zafira/INSTALL.md"><img src="https://img.shields.io/badge/VS_Code_Extension-v0.1.0-007acc.svg?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="VS Code"></a>
 </p>
 
@@ -42,21 +42,23 @@
 
 ### Versiyalar Bo'yicha Imkoniyatlar
 
-| Imkoniyat | v0.1 (Alpha) | v0.2 (Interop) | v0.3 (Hozirgi Reliz) | v0.4 (Roadmap) | v1.0 (Ecosystem) |
+| Imkoniyat | v0.1 (Alpha) | v0.2 (Interop) | v0.3 (Transpiler) | v0.4 (AI & ZPM) | v1.0 (Ecosystem) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Lexer (50+ token, Izohlar)** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Pratt Parsing & To'liq AST** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Tree-walking Interpreter & REPL** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **O'zgaruvchilar (`let`, `const`)** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Dual-Mode (`fn` draft / seal)** | Boshlang'ich | Boshlang'ich | **✅ To'liq statik** | ✅ | ✅ |
-| **Python Interop (`import py.*`)** | ❌ | **✅ To'liq** | ✅ | ✅ | ✅ |
-| **Statik Tip Tekshiruvi (Type Checker)** | ❌ | ❌ | **✅ 100% Suite** | ✅ | ✅ |
-| **`where` Invariant Verifikatsiyasi** | Faqat runtime | Faqat runtime | **✅ Statik isbot** | ✅ | ✅ |
-| **E'lon qilinmagan o'zgaruvchilar linteri** | ❌ | ❌ | **✅ Tavsiyalar bilan** | ✅ | ✅ |
-| **VS Code Sintaksis Kengaytmasi (.vsix)** | ❌ | ❌ | **✅ v0.1.0 VSIX** | ✅ | ✅ |
-| **LLVM Native Backend / C Transpiler** | ❌ | ❌ | ⏳ Rejada | **✅ v0.4** | ✅ |
-| **Standart kutubxona (`std.math`, `std.io`)** | ❌ | ❌ | ⏳ Rejada | **✅ v0.4** | ✅ |
-| **Paket menejeri (`zpm`)** | ❌ | ❌ | ⏳ Rejada | ⏳ Rejada | **✅ v1.0** |
+| **Dual-Mode (`fn` draft / seal)** | Boshlang'ich | Boshlang'ich | ✅ To'liq statik | ✅ | ✅ |
+| **Python Interop (`import py.*`)** | ❌ | ✅ To'liq | ✅ | ✅ | ✅ |
+| **Statik Tip Tekshiruvi (Type Checker)** | ❌ | ❌ | ✅ 100% Suite | ✅ | ✅ |
+| **`where` Invariant Verifikatsiyasi** | Faqat runtime | Faqat runtime | ✅ Statik isbot | ✅ | ✅ |
+| **VS Code Sintaksis Kengaytmasi (.vsix)** | ❌ | ❌ | ✅ v0.1.0 VSIX | ✅ | ✅ |
+| **C Transpiler (`zafira compile/transpile`)** | ❌ | ❌ | ✅ To'liq C99 | ✅ | ✅ |
+| **Standart kutubxona (`math`, `string`, `list`, `io`)** | ❌ | ❌ | ✅ 4 ta modul | ✅ | ✅ |
+| **Paket Menejeri (`zpm`: init, run, test, build)** | ❌ | ❌ | ❌ | **✅ v0.4** | ✅ |
+| **AI & Tensor Dvigateli (`std.ai`, @gpu Tensors)** | ❌ | ❌ | ❌ | **✅ v0.4** | ✅ |
+| **Web & Network (`std.net`, `std.json`, HTTP Server)** | ❌ | ❌ | ❌ | **✅ v0.4** | ✅ |
+| **LLVM JIT / To'liq mustaqil binar** | ❌ | ❌ | ❌ | ⏳ Rejada | **✅ v1.0** |
 
 ---
 

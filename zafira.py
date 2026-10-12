@@ -28,6 +28,9 @@ from src.interpreter import Interpreter, ZafiraError
 from src.transpiler import Transpiler
 
 
+from src.package_manager import init_project, run_project, test_project, build_project
+
+
 ZAFIRA_VERSION = "0.1.0-alpha"
 
 BANNER = f"""
@@ -53,7 +56,7 @@ def run_file(filepath: str):
     execute_source(source, filepath)
 
 
-def execute_source(source: str, filename: str = '<stdin>'):
+def execute_source(source: str, filename: str = '<stdin>', raise_exceptions: bool = False):
     """Manba kodni bajaradi"""
     try:
         # 1. Tokenizatsiya
@@ -70,23 +73,33 @@ def execute_source(source: str, filename: str = '<stdin>'):
             checker = TypeChecker()
             checker.check(program)
         except TypeCheckError as e:
+            if raise_exceptions:
+                raise
             print(f"[TYPE XATO] {e}")
             sys.exit(1)
 
         # 3. Interpretation
         interpreter = Interpreter()
-        interpreter.run(program)
+        return interpreter.run(program)
 
     except LexerError as e:
+        if raise_exceptions:
+            raise
         print(f"\n[XATO] Lekser Xatosi ({filename}):\n   {e}")
         sys.exit(1)
     except ParseError as e:
+        if raise_exceptions:
+            raise
         print(f"\n[XATO] Parser Xatosi ({filename}):\n   {e}")
         sys.exit(1)
     except ZafiraError as e:
+        if raise_exceptions:
+            raise
         print(f"\n[XATO] Ijro Xatosi ({filename}):\n   {e}")
         sys.exit(1)
     except Exception as e:
+        if raise_exceptions:
+            raise
         print(f"\n[XATO] Ichki Xato ({filename}):\n   {type(e).__name__}: {e}")
         sys.exit(1)
 
@@ -210,7 +223,10 @@ def main():
     if not args:
         print(BANNER)
         print("Foydalanish:")
-        print("  python zafira.py run <fayl.zf>        — Faylni bajar")
+        print("  python zafira.py init <nomi>          — Yangi loyiha yaratish (ZPM)")
+        print("  python zafira.py run [fayl/loyiha]    — Fayl yoki loyihani bajarish")
+        print("  python zafira.py build [loyiha]       — Loyihani transpilyatsiya qilish (C ga)")
+        print("  python zafira.py test [loyiha]        — Loyiha testlarini ishga tushirish")
         print("  python zafira.py transpile <fayl.zf>  — C kodiga aylantir (.c)")
         print("  python zafira.py compile <fayl.zf>    — Binar dasturga kompilyatsiya qil (.exe)")
         print("  python zafira.py repl                 — Interaktiv rejim")
@@ -220,11 +236,38 @@ def main():
 
     command = args[0]
 
-    if command == 'run':
+    if command == 'init':
         if len(args) < 2:
-            print("[Zafira] Fayl nomi ko'rsatilmagan: python zafira.py run <fayl.zf>")
+            print("[Zafira] Loyiha nomi ko'rsatilmadi: python zafira.py init <loyiha_nomi>")
             sys.exit(1)
-        run_file(args[1])
+        project_name = args[1]
+        target_path = args[2] if len(args) > 2 else '.'
+        init_project(project_name, target_path)
+
+    elif command == 'build':
+        project_dir = args[1] if len(args) > 1 else '.'
+        build_project(project_dir)
+
+    elif command == 'test':
+        project_dir = args[1] if len(args) > 1 else '.'
+        res = test_project(project_dir)
+        if res.get("failed", 0) > 0:
+            sys.exit(1)
+        sys.exit(0)
+
+    elif command == 'run':
+        if len(args) < 2:
+            if os.path.exists("zafira.json"):
+                run_project(".")
+            else:
+                print("[Zafira] Fayl nomi yoki loyiha ko'rsatilmagan: python zafira.py run <fayl.zf>")
+                sys.exit(1)
+        else:
+            target = args[1]
+            if os.path.isdir(target) or target.endswith('.json'):
+                run_project(target)
+            else:
+                run_file(target)
 
     elif command == 'transpile':
         if len(args) < 2:

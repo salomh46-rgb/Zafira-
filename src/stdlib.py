@@ -346,6 +346,35 @@ IO_MODULE = ZafiraModule('io', {
 })
 
 
+# ─── 5. STD.AI (SILICON TENSOR & AI ENGINE) ───
+
+def _get_ai_module() -> ZafiraModule:
+    from src.ai_engine import AI_MODULE_FIELDS
+    return ZafiraModule('ai', AI_MODULE_FIELDS)
+
+
+AI_MODULE = _get_ai_module()
+
+
+
+# ─── 6. STD.JSON ───
+
+def _get_json_module() -> ZafiraModule:
+    from src.std_json import create_json_module
+    return create_json_module()
+
+JSON_MODULE = _get_json_module()
+
+
+# ─── 7. STD.NET ───
+
+def _get_net_module() -> ZafiraModule:
+    from src.std_net import create_net_module
+    return create_net_module()
+
+NET_MODULE = _get_net_module()
+
+
 # ─── STDLIB MODULES RO'YXATI ───
 
 STDLIB_MODULES: Dict[str, ZafiraModule] = {
@@ -353,14 +382,18 @@ STDLIB_MODULES: Dict[str, ZafiraModule] = {
     'string': STRING_MODULE,
     'list': LIST_MODULE,
     'io': IO_MODULE,
+    'ai': AI_MODULE,
+    'json': JSON_MODULE,
+    'net': NET_MODULE,
 }
+
 
 
 def load_stdlib_module(path: str, env) -> None:
     parts = path.split('.')
     if len(parts) < 2:
         raise ZafiraError(f"Noto'g'ri modul yo'li: '{path}'")
-    module_name = parts[1]  # 'std.math' -> 'math'
+    module_name = parts[1]  # 'std.math' -> 'math', 'std.ai' -> 'ai'
     module = STDLIB_MODULES.get(module_name)
     if module is None:
         raise ZafiraError(f"'{path}' moduli topilmadi")

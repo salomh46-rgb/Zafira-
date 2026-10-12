@@ -1,0 +1,82 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ZAFIRA TILI - Silicon-Native AI & Tensor Namunalari
+//  Fayl: examples/ai_tensor_test.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import std.ai
+
+print("══════════════════════════════════════════════════")
+print("  🔷 Zafira AI & Tensor Silicon Engine Sinovi 🔷")
+print("══════════════════════════════════════════════════")
+
+// ─── 1. VEKTORLAR VA ULAR USTIDA AMALLAR ───
+print("\n[1] Vektorlar yaratish va skalyar ko'paytma (dot):")
+let v1 = ai.tensor([1.0, 2.0, 3.0])
+let v2 = ai.tensor([4.0, 5.0, 6.0])
+
+print("Vektor 1: " + String(v1))
+print("Vektor 2: " + String(v2))
+print("v1 shape: " + String(v1.shape))
+
+let dot_product = v1.dot(v2)
+print("v1 dot v2 = " + String(dot_product))
+
+let v_sum = v1 + v2
+print("v1 + v2 = " + String(v_sum))
+
+let v_scaled = v1 * 2.5
+print("v1 * 2.5 = " + String(v_scaled))
+
+// ─── 2. MATRITSALAR KO'PAYTMASI (2D MATMUL) ───
+print("\n[2] Matritsalar ko'paytmasi (Matrix Multiplication):")
+let mat_a = ai.tensor([
+    [1.0, 2.0],
+    [3.0, 4.0]
+])
+
+let mat_b = ai.tensor([
+    [5.0, 6.0],
+    [7.0, 8.0]
+])
+
+print("Matritsa A shape: " + String(mat_a.shape))
+print("Matritsa B shape: " + String(mat_b.shape))
+
+let mat_c = mat_a.dot(mat_b)
+print("A * B (matmul): " + String(mat_c))
+print("Matritsa C yig'indisi (sum): " + String(mat_c.sum()))
+print("Matritsa C o'rtachasi (mean): " + String(mat_c.mean()))
+
+// ─── 3. SILICON RUNTIME & KOSINUS O'XSHASHLIK (@gpu bloki) ───
+print("\n[3] Silicon Runtime: @gpu bloki va Vektor Kosinus O'xshashligi:")
+
+run @gpu {
+    let dev = ai.device()
+    print("Blok ichidagi apparat qurilmasi: " + dev)
+
+    // Matnlar uchun semantik embeddinglar hosil qilish
+    let matn1 = "Zafira Silicon-native dasturlash tili"
+    let matn2 = "Zafira Silicon-native dasturlash tili"
+    let matn3 = "Bugun havo juda quyoshli va iliq"
+
+    let emb1 = ai.embedding_mock(matn1)
+    let emb2 = ai.embedding_mock(matn2)
+    let emb3 = ai.embedding_mock(matn3)
+
+    print("Embedding 1 shape: " + String(emb1.shape))
+
+    let sim_bir_xil = ai.similarity(emb1, emb2)
+    let sim_har_xil = ai.similarity(emb1, emb3)
+
+    print("Bir xil matnlar o'xshashligi (kosinus): " + String(sim_bir_xil))
+    print("Har xil matnlar o'xshashligi (kosinus): " + String(sim_har_xil))
+
+    // Maxsus nollar va birlar tensori
+    let nollar = ai.zeros(2, 3)
+    let birlar = ai.ones(2, 3)
+    print("Nollar matritsasi: " + String(nollar))
+    print("Birlar matritsasi: " + String(birlar))
+}
+
+print("\n[4] Blokdan tashqaridagi faol apparat: " + ai.device())
+print("\n✅ AI & Tensor Silicon Engine muvaffaqiyatli sinovdan o'tdi!")

@@ -118,8 +118,10 @@ def _builtin_range(start, end=None, step=1):
 
 
 def _builtin_type(obj):
+    from src.ai_engine import Tensor
     mapping = {int: 'Int', float: 'Float', str: 'String',
                bool: 'Bool', ZafiraList: 'List', ZafiraFunction: 'Fn',
+               Tensor: 'Tensor',
                ZafiraStruct: lambda x: x.type_name}
     for k, v in mapping.items():
         if isinstance(obj, k):
@@ -148,7 +150,16 @@ def _zf_str(v) -> str:
         return 'true' if v else 'false'
     if isinstance(v, (ZafiraList, ZafiraStruct)):
         return repr(v)
+    from src.ai_engine import Tensor
+    if isinstance(v, Tensor):
+        return str(v)
     return str(v)
+
+
+def _builtin_assert(cond, msg="Shart bajarilmadi"):
+    if not cond:
+        raise ZafiraError(f"AssertionError: {msg}")
+    return True
 
 
 BUILTINS = {
@@ -160,6 +171,7 @@ BUILTINS = {
     'Int': _builtin_int,
     'Float': _builtin_float,
     'String': _builtin_str,
+    'assert': _builtin_assert,
 }
 
 
@@ -213,12 +225,24 @@ class Interpreter:
         left = self._exec(node.left, env)
         right = self._exec(node.right, env)
         op = node.op
+        from src.ai_engine import Tensor
         if op == '+':
+            if isinstance(left, Tensor) or isinstance(right, Tensor):
+                if isinstance(left, Tensor):
+                    return left.add(right)
+                return right.add(left)
             if isinstance(left, str) or isinstance(right, str):
                 return _zf_str(left) + _zf_str(right)
             return left + right
-        if op == '-': return left - right
+        if op == '-':
+            if isinstance(left, Tensor):
+                return left.sub(right)
+            return left - right
         if op == '*':
+            if isinstance(left, Tensor):
+                return left.mul(right)
+            if isinstance(right, Tensor):
+                return right.mul(left)
             if isinstance(left, str) and isinstance(right, int):
                 return left * right
             return left * right
@@ -271,8 +295,11 @@ class Interpreter:
                 raise ZafiraError("Faqat struct maydonlari o'zgartirilishi mumkin")
         elif isinstance(node.target, IndexAccess):
             obj = self._exec(node.target.obj, env)
-            idx = int(self._exec(node.target.index, env))
-            if isinstance(obj, ZafiraList):
+            raw_idx = self._exec(node.target.index, env)
+            if isinstance(obj, ZafiraStruct) and isinstance(raw_idx, str):
+                obj.fields[raw_idx] = value
+            elif isinstance(obj, ZafiraList):
+                idx = int(raw_idx)
                 obj.items[idx] = value
         return None
 
@@ -322,8 +349,15 @@ class Interpreter:
     def _exec_StructDef(self, node, env):
         self._struct_defs[node.name] = node.fields
         # Constructor funksiyani muhitga qo'shamiz
-        def constructor(**kwargs):
-            fields = {name: kwargs.get(name) for name, _ in node.fields}
+        def constructor(*args, **kwargs):
+            fields = {}
+            for i, (name, _) in enumerate(node.fields):
+                if i < len(args):
+                    fields[name] = args[i]
+                elif name in kwargs:
+                    fields[name] = kwargs[name]
+                else:
+                    fields[name] = None
             return ZafiraStruct(node.name, fields)
         env.set(node.name, constructor)
         return None
@@ -343,13 +377,18 @@ class Interpreter:
         return None
 
     def _exec_RunBlock(self, node, env):
-        # Draft rejimida @gpu/@npu/@auto — oddiy bloktaga bajaradi
         target = node.target
         if target not in ('@gpu', '@npu', '@auto', '@cpu'):
             raise ZafiraError(f"Noma'lum hardware target: {target}")
-        print(f"[Zafira] {target} bloki bajarilmoqda (draft mode: CPU)")
-        child_env = Environment(parent=env)
-        return self._exec_block(node.body, child_env)
+
+        from src.ai_engine import silicon_context, get_active_device
+        device_name = target.lstrip('@')
+        with silicon_context(device_name):
+            active_device = get_active_device()
+            print(f"[Zafira Silicon Runtime] {target} bloki faollashtirildi (Apparat: {active_device.upper()})")
+            child_env = Environment(parent=env)
+            child_env.set('__device__', active_device)
+            return self._exec_block(node.body, child_env)
 
     # ─── FUNKSIYA CHAQIRISH ───
 
@@ -417,11 +456,30 @@ class Interpreter:
             if member == 'trim': return obj.strip()
             raise ZafiraError(f"String da '{member}' metodi yo'q")
 
+        from src.ai_engine import Tensor
+        if isinstance(obj, Tensor):
+            if member == 'shape':
+                return obj.shape
+            if member == 'device':
+                return obj.device
+            if member in ('data', 'to_list', 'tolist'):
+                return obj.to_list()
+            if hasattr(obj, member):
+                attr = getattr(obj, member)
+                if callable(attr):
+                    return attr
+            raise ZafiraError(f"Tensor turida '{member}' metodi yoki maydoni yo'q")
+
         raise ZafiraError(f"'{type(obj).__name__}' turida '{member}' yo'q")
 
     def _exec_IndexAccess(self, node, env):
         obj = self._exec(node.obj, env)
-        idx = int(self._exec(node.index, env))
+        raw_idx = self._exec(node.index, env)
+        if isinstance(obj, ZafiraStruct) and isinstance(raw_idx, str):
+            if raw_idx in obj.fields:
+                return obj.fields[raw_idx]
+            raise ZafiraError(f"'{obj.type_name}' da '{raw_idx}' maydoni yo'q")
+        idx = int(raw_idx)
         if isinstance(obj, ZafiraList):
             try:
                 return obj.items[idx]
@@ -432,4 +490,10 @@ class Interpreter:
                 return obj[idx]
             except IndexError:
                 raise ZafiraError(f"String indeksi [{idx}] chegaradan tashqarida")
-        raise ZafiraError(f"'{type(obj)}' indekslash qo'llab-quvvatlanmaydi")
+        from src.ai_engine import Tensor
+        if isinstance(obj, Tensor):
+            try:
+                return obj[idx]
+            except IndexError:
+                raise ZafiraError(f"Tensor indeksi [{idx}] chegaradan tashqarida (shape: {obj.shape})")
+        raise ZafiraError(f"'{type(obj).__name__}' indekslash qo'llab-quvvatlanmaydi")

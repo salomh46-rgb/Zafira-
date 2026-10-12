@@ -163,7 +163,41 @@ class TestStdlib(unittest.TestCase):
 
         self.assertIn("ABC\nD", out)
 
-    # ─── 5. XATOLIKLAR VA CHEKKA HOLATLAR ───
+    # ─── 5. STD.AI MODULI YUKLANISHI ───
+
+    def test_std_ai_module_loading(self):
+        code = """
+        import std.ai
+        let t = ai.tensor([1, 2, 3])
+        let d = ai.device()
+        """
+        self.run_code(code)
+        env = self.interpreter.global_env
+        self.assertIsNotNone(env.get('ai'))
+        self.assertEqual(env.get('d'), 'cpu')
+
+    # ─── 6. STD.JSON VA STD.NET MODULLARI YUKLANISHI ───
+
+    def test_std_json_module_loading(self):
+        code = """
+        import std.json
+        let parsed = json.parse("{\\\"hello\\\": \\\"world\\\"}")
+        let dumped = json.stringify(parsed)
+        """
+        self.run_code(code)
+        env = self.interpreter.global_env
+        self.assertIsNotNone(env.get('json'))
+        self.assertEqual(env.get('parsed').fields['hello'], 'world')
+
+    def test_std_net_module_loading(self):
+        code = """
+        import std.net
+        """
+        self.run_code(code)
+        env = self.interpreter.global_env
+        self.assertIsNotNone(env.get('net'))
+
+    # ─── 7. XATOLIKLAR VA CHEKKA HOLATLAR ───
 
     def test_unknown_stdlib_module(self):
         env = Environment()

@@ -1,0 +1,83 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ZAFIRA TILI - Web & Network (std.json, std.net) Namunasi
+//  Fayl: net_json_test.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import std.json
+import std.net
+
+print("=== 1. STD.JSON SINOVLARI ===")
+
+// 1.1 JSON satrini tahlil qilish (parse)
+let json_matn = "{\"loyiha\": \"Zafira\", \"versiya\": 1, \"faol\": true, \"muallif\": \"Jasper\", \"modullar\": [\"std.json\", \"std.net\", \"std.ai\"]}"
+let obj = json.parse(json_matn)
+
+print("Loyiha: " + obj.loyiha)
+print("Versiya: " + String(obj.versiya))
+print("Muallif: " + obj.muallif)
+print("Birinchi modul: " + obj.modullar[0])
+
+// 1.2 Obyektni JSON matnga aylantirish (stringify)
+let json_chiqish = json.stringify(obj)
+print("JSON matn: " + json_chiqish)
+
+// 1.3 Ro'yxatni JSON ga aylantirish
+let sonlar = [10, 20, 30, 40, 50]
+let sonlar_json = json.stringify(sonlar)
+print("Sonlar JSON: " + sonlar_json)
+
+// 1.4 JSON massivni parse qilish
+let parsed_sonlar = json.parse("[100, 200, 300]")
+print("Massiv uzunligi: " + String(parsed_sonlar.len))
+print("Massiv [1]: " + String(parsed_sonlar[1]))
+
+print("\n=== 2. LOCAL HTTP SERVER VA NET SINOVI ===")
+
+// Server so'rovlarini qabul qiluvchi handler
+fn server_handler(req) {
+    if req.path == "/salom" {
+        return "Salom, Zafira Serveridan!"
+    }
+    if req.path == "/api/status" {
+        return json.parse("{\"status\": \"OK\", \"server\": \"Zafira Light HTTP\"}")
+    }
+    if req.path == "/api/echo" {
+        return "Qabul qilindi: " + req.body
+    }
+    return "Topilmadi: " + req.path
+}
+
+// Yengil serverni fonda (threaded) ishga tushiramiz
+let srv = net.listen(8999, server_handler, null, true)
+print("Lokal server 8999-portda ishga tushirildi.")
+
+// GET so'rov yuborish
+let res_salom = net.get("http://127.0.0.1:8999/salom")
+print("GET /salom status: " + String(res_salom.status))
+print("GET /salom body: " + res_salom.body)
+print("GET /salom ok: " + String(res_salom.ok))
+
+// JSON qaytaruvchi endpointdan GET so'rov olish
+let res_api = net.get("http://127.0.0.1:8999/api/status")
+print("GET /api/status status: " + String(res_api.status))
+let api_data = json.parse(res_api.body)
+print("API server nomi: " + api_data.server)
+
+// POST so'rov yuborish (JSON data bilan)
+let yuboriladigan = json.parse("{\"foydalanuvchi\": \"Jasper\", \"harakat\": \"login\"}")
+let res_post = net.post("http://127.0.0.1:8999/api/echo", null, yuboriladigan)
+print("POST /api/echo status: " + String(res_post.status))
+print("POST /api/echo body: " + res_post.body)
+
+// Serverni to'xtatamiz
+srv.close()
+print("Lokal server to'xtatildi.")
+
+print("\n=== 3. TASHQI URL SINOVI (GitHub API) ===")
+let gh = net.get("https://api.github.com")
+print("GitHub API status: " + String(gh.status))
+print("GitHub API ok: " + String(gh.ok))
+let gh_json = json.parse(gh.body)
+print("GitHub currentUserUrl: " + gh_json.current_user_url)
+
+print("\nBarcha testlar muvaffaqiyatli yakunlandi!")

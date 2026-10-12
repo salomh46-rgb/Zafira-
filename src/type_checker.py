@@ -388,10 +388,14 @@ class TypeChecker:
                 if not is_type_compatible(field_type, val_type, env.all_structs()):
                     raise TypeCheckError(f"'{node.target.member}' maydoniga {val_type} tayinlab bo'lmaydi, {field_type} kutilgan!")
         elif isinstance(node.target, IndexAccess):
-            self._check_expr(node.target.obj, env)
+            obj_type = self._check_expr(node.target.obj, env)
             idx_type = self._check_expr(node.target.index, env)
-            if not is_type_compatible('Int', idx_type, env.all_structs()):
-                raise TypeCheckError(f"Indeks turi Int bo'lishi kerak, lekin '{idx_type}' berildi!")
+            if obj_type in ('Any', 'JsonObject') or obj_type in env.all_structs():
+                if not (is_type_compatible('Int', idx_type, env.all_structs()) or is_type_compatible('String', idx_type, env.all_structs())):
+                    raise TypeCheckError(f"Indeks turi Int yoki String bo'lishi kerak, lekin '{idx_type}' berildi!")
+            else:
+                if not is_type_compatible('Int', idx_type, env.all_structs()):
+                    raise TypeCheckError(f"Indeks turi Int bo'lishi kerak, lekin '{idx_type}' berildi!")
         else:
             raise TypeCheckError(f"Noto'g'ri tayinlash nishoni: {type(node.target).__name__}")
 
@@ -711,8 +715,15 @@ class TypeChecker:
     def _infer_IndexAccess(self, node: IndexAccess, env: TypeEnvironment) -> str:
         obj_type = self._check_expr(node.obj, env)
         idx_type = self._check_expr(node.index, env)
-        if not is_type_compatible('Int', idx_type, env.all_structs()):
-            raise TypeCheckError(f"Indeks turi Int bo'lishi kerak, lekin '{idx_type}' berildi!")
+        if obj_type in ('String', 'List'):
+            if not is_type_compatible('Int', idx_type, env.all_structs()):
+                raise TypeCheckError(f"Indeks turi Int bo'lishi kerak, lekin '{idx_type}' berildi!")
+        elif obj_type == 'Any' or obj_type in env.all_structs():
+            if not (is_type_compatible('Int', idx_type, env.all_structs()) or is_type_compatible('String', idx_type, env.all_structs())):
+                raise TypeCheckError(f"Indeks turi Int yoki String bo'lishi kerak, lekin '{idx_type}' berildi!")
+        else:
+            if not is_type_compatible('Int', idx_type, env.all_structs()):
+                raise TypeCheckError(f"Indeks turi Int bo'lishi kerak, lekin '{idx_type}' berildi!")
         if obj_type == 'String':
             return 'String'
         if obj_type == 'List':
