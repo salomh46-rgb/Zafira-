@@ -1,0 +1,14 @@
+seal fn qo'sh(a: Int, b: Int) -> Int {
+    return a + b
+}
+
+seal fn faktorial(n: Int) -> Int {
+    if n <= 1 {
+        return 1
+    }
+    return n * faktorial(n - 1)
+}
+
+let x = qo'sh(10, 20)
+print("10 + 20 = " + String(x))
+print("7! = " + String(faktorial(7)))

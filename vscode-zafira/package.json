@@ -1,13 +1,27 @@
 {
   "name": "zafira-lang",
   "displayName": "Zafira Language",
-  "description": "Syntax highlighting for Zafira (.zf) programming language",
+  "description": "Official syntax highlighting and language configuration for the Zafira (.zf) programming language",
   "version": "0.1.0",
+  "publisher": "jasper",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salomh46-rgb/Zafira-.git"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
     "Programming Languages"
+  ],
+  "keywords": [
+    "zafira",
+    "language",
+    "syntax",
+    "silicon-native",
+    "ai"
   ],
   "contributes": {
     "languages": [
