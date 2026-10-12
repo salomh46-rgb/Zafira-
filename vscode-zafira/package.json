@@ -2,7 +2,7 @@
   "name": "zafira-lang",
   "displayName": "Zafira Language",
   "description": "Official syntax highlighting and language configuration for the Zafira (.zf) programming language",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "jasper",
   "icon": "icon.png",
   "repository": {

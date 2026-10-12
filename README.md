@@ -13,9 +13,9 @@
   <a href="https://github.com/salomh46-rgb/Zafira-/releases"><img src="https://img.shields.io/badge/version-v1.0.0--LTS-0ea5e9.svg?style=for-the-badge&logo=codeforces" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge" alt="License"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/runtime-Python_3.11+-3776ab.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
-  <a href="#"><img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-0284c7.svg?style=for-the-badge" alt="Platform"></a>
+  <a href="https://github.com/salomh46-rgb/Zafira-/actions/workflows/ci.yml"><img src="https://github.com/salomh46-rgb/Zafira-/actions/workflows/ci.yml/badge.svg" alt="CI/CD Status"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-333%2F333_Passing-10b981.svg?style=for-the-badge&logo=checkmarx" alt="Tests"></a>
-  <a href="vscode-zafira/INSTALL.md"><img src="https://img.shields.io/badge/VS_Code_Extension-v0.1.0-007acc.svg?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="VS Code"></a>
+  <a href="vscode-zafira/INSTALL.md"><img src="https://img.shields.io/badge/VS_Code_Extension-v1.0.0-007acc.svg?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="VS Code"></a>
 </p>
 
 <p align="center">
@@ -38,8 +38,8 @@ Historically, software engineers have been forced to make a painful compromise:
 3. **Zero-Overhead Python Bridge**: Seamlessly import any library in the Python universe (`import py.torch`, `import py.pandas`, `import py.numpy`) with zero FFI glue.
 
 📚 **Official Documentation & Flagship Projects:**
-- [Complete Language Specification (SPECIFICATION.md)](docs/SPECIFICATION.md)
-- [1-Page High-Density Developer Cheatsheet (CHEATSHEET.md)](docs/CHEATSHEET.md)
+- [Complete Language Specification (English)](docs/SPECIFICATION.en.md) | [O'zbekcha Spetsifikatsiya](docs/SPECIFICATION.md)
+- [1-Page High-Density Developer Cheatsheet (English)](docs/CHEATSHEET.en.md) | [O'zbekcha Cheatsheet](docs/CHEATSHEET.md)
 - [💎 SapphireKV — In-Memory Key-Value & Cache Engine (100% Zafira)](examples/sapphire_kv/README.md)
 - [Flagship Production Showcase (examples/v1_showcase.zf)](examples/v1_showcase.zf)
 
@@ -112,12 +112,20 @@ python --version
 ### Step 3: Run the Flagship v1.0 Showcase
 Execute the complete multi-module showcase exercising every single language capability:
 ```bash
+# Linux / macOS
+python3 zafira.py run examples/v1_showcase.zf
+
+# Windows
 py -3 -X utf8 zafira.py run examples/v1_showcase.zf
 ```
 
 ### Step 4: Interactive REPL
 Fire up the lightning-fast Zafira terminal REPL:
 ```bash
+# Linux / macOS
+python3 zafira.py repl
+
+# Windows
 py -3 -X utf8 zafira.py repl
 ```
 ```
@@ -131,6 +139,8 @@ zf> 2 ** 10
 ### Step 5: Web Interactive Studio
 Launch the dark-mode obsidian web studio directly in your browser:
 ```bash
+python3 zafira.py playground
+# Or on Windows:
 py -3 -X utf8 zafira.py playground
 ```
 

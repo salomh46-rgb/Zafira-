@@ -1,0 +1,43 @@
+name: Zafira CI/CD Engine
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test Suite (${{ matrix.os }} - Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.11', '3.12']
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Run Core Test Suite (333+ Unit Tests)
+        run: |
+          python -m unittest discover tests
+
+      - name: Verify Flagship SapphireKV Tests
+        run: |
+          python zafira.py run examples/sapphire_kv/tests/test_store.zf
+          python zafira.py run examples/sapphire_kv/tests/test_main.zf
+
+      - name: Verify v1.0.0 Grand Showcase
+        run: |
+          python zafira.py run examples/v1_showcase.zf

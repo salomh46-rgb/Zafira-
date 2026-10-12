@@ -122,7 +122,7 @@
       "patterns": [
         {
           "name": "support.type.zafira",
-          "match": "\\b(Int|Float|String|Bool)\\b"
+          "match": "\\b(Int|Float|String|Bool|List|Null|Any|JsonObject)\\b"
         }
       ]
     },
@@ -130,7 +130,7 @@
       "patterns": [
         {
           "name": "support.function.zafira",
-          "match": "\\b(print|input|len|range|type)\\b"
+          "match": "\\b(print|input|len|range|type|assert|sleep)\\b"
         }
       ]
     },
@@ -150,7 +150,7 @@
       "patterns": [
         {
           "name": "keyword.control.zafira",
-          "match": "\\b(let|const|fn|seal|draft|where|run|struct|import|return|if|else|while|for|in|and|or|not|try|catch|throw|finally)\\b"
+          "match": "\\b(let|const|fn|seal|draft|where|run|struct|impl|import|as|match|async|await|return|if|else|while|for|in|and|or|not|try|catch|throw|finally)\\b"
         }
       ]
     },
@@ -190,7 +190,7 @@
       "patterns": [
         {
           "name": "keyword.operator.zafira",
-          "match": "(->|\\.\\.|==|!=|<=|>=|\\*\\*|\\+|-|\\*|/|%|<|>|=|!)"
+          "match": "(=>|->|\\.\\.|==|!=|<=|>=|\\*\\*|\\+|-|\\*|/|%|<|>|=|!)"
         }
       ]
     }
