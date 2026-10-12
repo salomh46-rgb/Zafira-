@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zafira Online Studio — Silicon-Native Language Playground</title>
+  <title>Zafira Online Studio — Silicon-Native Language Playground (v1.0.0 LTS)</title>
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +12,7 @@
   
   <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230ea5e9'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
+  <link rel="icon" type="image/png" href="icon.png">
 </head>
 <body>
 
@@ -25,31 +25,15 @@
     <!-- ─── HEADER ─── -->
     <header class="header">
       <div class="brand-section">
-        <!-- Animated Gem Logo -->
-        <svg class="gem-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 2L4 9L16 16L28 9L16 2Z" fill="url(#gem-grad-top)" />
-          <path d="M4 9L16 16V30L4 21V9Z" fill="url(#gem-grad-left)" />
-          <path d="M28 9L16 16V30L28 21V9Z" fill="url(#gem-grad-right)" />
-          <defs>
-            <linearGradient id="gem-grad-top" x1="4" y1="2" x2="28" y2="16" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#38bdf8"/>
-              <stop offset="1" stop-color="#0284c7"/>
-            </linearGradient>
-            <linearGradient id="gem-grad-left" x1="4" y1="9" x2="16" y2="30" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#0ea5e9"/>
-              <stop offset="1" stop-color="#0369a1"/>
-            </linearGradient>
-            <linearGradient id="gem-grad-right" x1="28" y1="9" x2="16" y2="30" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#7dd3fc"/>
-              <stop offset="1" stop-color="#0284c7"/>
-            </linearGradient>
-          </defs>
-        </svg>
+        <!-- 3D Sapphire Logo -->
+        <a href="https://github.com/salomh46-rgb/Zafira-" target="_blank" style="display: flex; align-items: center; text-decoration: none;">
+          <img src="icon.png" width="34" height="34" style="border-radius: 8px; box-shadow: 0 0 16px rgba(14, 165, 233, 0.45); border: 1px solid rgba(56, 189, 248, 0.3);" alt="Zafira Logo">
+        </a>
 
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <h1 class="brand-title">ZAFIRA ONLINE STUDIO</h1>
-            <span class="version-pill">v0.1.0 Silicon</span>
+            <span class="version-pill">v1.0.0 LTS</span>
           </div>
         </div>
       </div>
@@ -57,13 +41,16 @@
       <!-- Controls: Template selector & Action buttons -->
       <div class="header-controls">
         <div class="template-selector-box">
-          <span class="template-label">Namunalar:</span>
+          <span class="template-label">Namuna:</span>
           <select id="template-select" class="template-select" aria-label="Kod namunalari">
+            <option value="sapphire_kv">💎 SapphireKV (In-Memory Cache)</option>
             <option value="hello">Hello World (Salom Dunyo)</option>
-            <option value="factorial">Faktorial (Rekursiya & Seal)</option>
+            <option value="factorial">Faktorial (Seal & Invariants)</option>
+            <option value="oop_struct">OOP Metodlar (impl Struct)</option>
+            <option value="match">Pattern Matching (match =>)</option>
             <option value="ai_tensors">AI Tensors (Silicon Engine)</option>
-            <option value="web_json">Web & JSON (std.json)</option>
-            <option value="async">Async & Navbat (Pipeline)</option>
+            <option value="async">Async / Await (Asinxron)</option>
+            <option value="errors">Xatolar (try / catch / finally)</option>
           </select>
         </div>
 
@@ -79,7 +66,7 @@
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 3v7m0 0l-5 4m5-4l5 4M7 14v4M17 14v4M7 18a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4zM12 3a2 2 0 100-4 2 2 0 000 4z"/>
             </svg>
-            <span>AST ko'rish</span>
+            <span>AST</span>
           </button>
 
           <button id="btn-tokens" class="btn btn-secondary" title="Lekser tokenlarini ko'rish">
@@ -90,9 +77,19 @@
           </button>
         </div>
 
-        <div class="server-status" title="Lokal Zafira Server ulanish holati">
+        <!-- External Quick Links -->
+        <div style="display: flex; align-items: center; gap: 8px; margin-left: 4px;">
+          <a href="https://github.com/salomh46-rgb/Zafira-" target="_blank" class="tool-btn" style="text-decoration: none; padding: 6px 10px; border-radius: 6px;" title="GitHub Repozitoriya">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            <span>GitHub</span>
+          </a>
+        </div>
+
+        <div class="server-status" title="Zafira Serverless Cloud Engine">
           <span id="status-dot" class="status-dot"></span>
-          <span id="status-text">Server: Ulanmoqda...</span>
+          <span id="status-text">Cloud Engine: Tayyor</span>
         </div>
       </div>
     </header>
@@ -182,7 +179,7 @@
                 <line x1="12" y1="16" x2="12" y2="12"/>
                 <line x1="12" y1="8" x2="12.01" y2="8"/>
               </svg>
-              <span>Diagnostika</span>
+              <span>Xususiyatlar</span>
             </button>
           </div>
 
@@ -224,16 +221,18 @@
             </div>
             <div class="stat-card">
               <div class="stat-card-title">AST Holati</div>
-              <div id="diag-ast-status" class="stat-card-value">Kutilmoqda</div>
+              <div id="diag-ast-status" class="stat-card-value">Tayyor</div>
             </div>
             <div class="stat-card">
-              <div class="stat-card-title">Apparat Dvigateli</div>
-              <div class="stat-card-value" style="color: #38bdf8;">Silicon @cpu/@gpu</div>
+              <div class="stat-card-title">Arxitektura</div>
+              <div class="stat-card-value" style="color: #38bdf8;">Dual-Mode LTS</div>
             </div>
           </div>
           <div style="font-size: 0.8rem; color: var(--text-dim); line-height: 1.6;">
-            <p>🔷 <strong>Zafira Language</strong> — Silicon-Native dasturlash tili.</p>
-            <p>⚙️ Draft mode (dinamik ijro), Seal mode (invariants & verification), C Transpiler va AI Tensor akseleratsiyasi.</p>
+            <p>🔷 <strong>Zafira Language v1.0.0 LTS</strong> — Silicon-Native dasturlash tili.</p>
+            <p>⚙️ <strong>Draft mode</strong> (erkin prototiplash) va <strong>Seal mode</strong> (formal invariantlar & where verification).</p>
+            <p>💎 <strong>Flagman Loyiha:</strong> SapphireKV — In-Memory Key-Value & Cache Engine.</p>
+            <p>👨‍💻 <strong>Muallif:</strong> Javohirbek Asqarov (Jasper)</p>
           </div>
         </div>
 
