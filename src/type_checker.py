@@ -230,7 +230,7 @@ class TypeChecker:
         """Program AST daraxtini bir marta (single-pass) aylanib chiqadi."""
         # 1. Top-level funksiyalar va structlarni ro'yxatga olamiz (forward-declaration / recursion uchun)
         for stmt in program.body:
-            if isinstance(stmt, FunctionDef):
+            if isinstance(stmt, FunctionDef) and stmt.name:
                 self.root_env.declare_function(
                     name=stmt.name,
                     params=stmt.params,
@@ -450,6 +450,10 @@ class TypeChecker:
         if node.path == 'sys.io':
             env.declare('print', type_name='Fn', is_const=True)
             env.declare('input', type_name='Fn', is_const=True)
+        elif node.path.startswith('std.'):
+            parts = node.path.split('.')
+            if len(parts) >= 2:
+                env.declare(parts[1], type_name='Any', is_const=True)
         elif node.path.startswith('py.'):
             mod_path = node.path[3:]
             root_name = mod_path.split('.')[0]
@@ -506,6 +510,9 @@ class TypeChecker:
 
     def _infer_NullLiteral(self, node: NullLiteral, env: TypeEnvironment) -> str:
         return 'Null'
+
+    def _infer_FunctionDef(self, node: FunctionDef, env: TypeEnvironment) -> str:
+        return 'Fn'
 
     def _infer_Identifier(self, node: Identifier, env: TypeEnvironment) -> str:
         name = node.name

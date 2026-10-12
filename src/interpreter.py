@@ -23,12 +23,19 @@ class ZafiraError(Exception):
 
 
 class ZafiraFunction:
-    def __init__(self, node: FunctionDef, env: 'Environment'):
+    def __init__(self, node: FunctionDef, env: 'Environment', interpreter: Optional['Interpreter'] = None):
         self.node = node
         self.closure = env
+        self.interpreter = interpreter
+
+    def __call__(self, *args):
+        if self.interpreter is None:
+            raise ZafiraError("ZafiraFunction interpreterga bog'lanmagan")
+        return self.interpreter.call_function(self, list(args))
 
     def __repr__(self):
-        return f"<fn {self.node.name}>"
+        name = self.node.name if self.node.name else "<anonymous>"
+        return f"<fn {name}>"
 
 
 class ZafiraStruct:
@@ -307,9 +314,10 @@ class Interpreter:
         return result
 
     def _exec_FunctionDef(self, node, env):
-        fn = ZafiraFunction(node=node, env=env)
-        env.set(node.name, fn)
-        return None
+        fn = ZafiraFunction(node=node, env=env, interpreter=self)
+        if node.name:
+            env.set(node.name, fn)
+        return fn
 
     def _exec_StructDef(self, node, env):
         self._struct_defs[node.name] = node.fields
@@ -324,6 +332,9 @@ class Interpreter:
         if node.path.startswith('py.'):
             from src.python_interop import PythonInterop
             PythonInterop.import_module(node.path, env)
+        elif node.path.startswith('std.'):
+            from src.stdlib import load_stdlib_module
+            load_stdlib_module(node.path, env)
         elif node.path == 'sys.io':
             env.set('print', _builtin_print)
             env.set('input', _builtin_input)
@@ -342,34 +353,37 @@ class Interpreter:
 
     # ─── FUNKSIYA CHAQIRISH ───
 
+    def call_function(self, fn: ZafiraFunction, args: list) -> Any:
+        # where (invariant) tekshiruvi
+        if fn.node.where_clause:
+            call_env = Environment(parent=fn.closure)
+            for (pname, _), arg in zip(fn.node.params, args):
+                call_env.set(pname, arg)
+            ok = self._exec(fn.node.where_clause, call_env)
+            if not ok:
+                raise ZafiraError(
+                    f"'{fn.node.name}' funksiyasi 'where' sharti bajarilmadi! "
+                    f"Chaqirildi: {args}"
+                )
+        call_env = Environment(parent=fn.closure)
+        for (pname, _), arg in zip(fn.node.params, args):
+            call_env.set(pname, arg)
+        try:
+            return self._exec_block(fn.node.body, call_env)
+        except ZafiraReturn as ret:
+            return ret.value
+        return None
+
     def _exec_FunctionCall(self, node, env):
         callee = self._exec(node.callee, env)
         args = [self._exec(a, env) for a in node.args]
 
-        # Python builtin funksiya
-        if callable(callee) and not isinstance(callee, ZafiraFunction):
-            return callee(*args)
-
         if isinstance(callee, ZafiraFunction):
-            fn = callee
-            # where (invariant) tekshiruvi
-            if fn.node.where_clause:
-                call_env = Environment(parent=fn.closure)
-                for (pname, _), arg in zip(fn.node.params, args):
-                    call_env.set(pname, arg)
-                ok = self._exec(fn.node.where_clause, call_env)
-                if not ok:
-                    raise ZafiraError(
-                        f"'{fn.node.name}' funksiyasi 'where' sharti bajarilmadi! "
-                        f"Chaqirildi: {args}"
-                    )
-            call_env = Environment(parent=fn.closure)
-            for (pname, _), arg in zip(fn.node.params, args):
-                call_env.set(pname, arg)
-            try:
-                return self._exec_block(fn.node.body, call_env)
-            except ZafiraReturn as ret:
-                return ret.value
+            return self.call_function(callee, args)
+
+        # Python builtin funksiya
+        if callable(callee):
+            return callee(*args)
 
         raise ZafiraError(f"{callee!r} — funksiya emas!")
 

@@ -1,0 +1,25 @@
+// Zafira Standart Kutubxona (stdlib) Sinov Fayli
+import std.math
+import std.string
+import std.list
+import std.io
+
+// 1. std.math sinovi
+print("PI = " + String(math.PI))
+print("sqrt(16) = " + String(math.sqrt(16.0)))
+print("2^10 = " + String(math.pow(2, 10)))
+
+// 2. std.string sinovi
+let s = string.upper("salom dunyo")
+print("UPPER: " + s)
+
+let parts = string.split("a,b,c", ",")
+print("split: " + String(parts))
+
+// 3. std.list sinovi
+let nums = [3, 1, 4, 1, 5, 9]
+let sorted = list.sort(nums)
+print("sorted: " + String(sorted))
+
+let total = list.sum(nums)
+print("sum: " + String(total))

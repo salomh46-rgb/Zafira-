@@ -19,9 +19,13 @@ if sys.platform == 'win32':
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+import subprocess
+import shutil
+
 from src.lexer import Lexer, LexerError
 from src.parser import Parser, ParseError
 from src.interpreter import Interpreter, ZafiraError
+from src.transpiler import Transpiler
 
 
 ZAFIRA_VERSION = "0.1.0-alpha"
@@ -144,16 +148,74 @@ def repl():
             break
 
 
+def transpile_file(filepath: str) -> str:
+    """Zafira faylini C kodiga transpile qiladi va konsolga chiqaradi"""
+    if not os.path.exists(filepath):
+        print(f"[Zafira] Fayl topilmadi: {filepath}")
+        sys.exit(1)
+
+    with open(filepath, encoding='utf-8') as f:
+        source = f.read()
+
+    try:
+        lexer = Lexer(source)
+        tokens = lexer.tokenize()
+        parser = Parser(tokens)
+        program = parser.parse()
+
+        transpiler = Transpiler()
+        c_code = transpiler.transpile(program)
+
+        c_path = os.path.splitext(filepath)[0] + '.c'
+        with open(c_path, 'w', encoding='utf-8') as f:
+            f.write(c_code)
+
+        print(c_code)
+        print(f"\n[Zafira] C kodi muvaffaqiyatli yaratildi: {c_path}")
+        return c_path
+    except (LexerError, ParseError) as e:
+        print(f"\n[XATO] Transpilyatsiya xatosi ({filepath}):\n   {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n[XATO] Ichki Xato ({filepath}):\n   {type(e).__name__}: {e}")
+        sys.exit(1)
+
+
+def compile_file(filepath: str):
+    """Zafira faylini C ga transpile qiladi va gcc yordamida binar fayl (.exe) yaratadi"""
+    c_path = transpile_file(filepath)
+    exe_name = os.path.splitext(filepath)[0] + ('.exe' if sys.platform == 'win32' else '')
+
+    gcc_bin = shutil.which('gcc') or shutil.which('clang')
+    if not gcc_bin:
+        print(f"\n[Zafira Ogohlantirish] 'gcc' yoki 'clang' kompyilyatori tizimda topilmadi.")
+        print(f"[Zafira] C kodi tayyor: {c_path}")
+        print(f"[Zafira] Qo'lda kompilyatsiya qilish: gcc {c_path} -o {exe_name} -lm")
+        return
+
+    print(f"\n[Zafira] Kompilyator: {gcc_bin}")
+    print(f"[Zafira] Kompilyatsiya qilinmoqda: {c_path} -> {exe_name} ...")
+    cmd = [gcc_bin, c_path, '-o', exe_name, '-lm']
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        print(f"[Zafira XATO] Kompilyatsiya xatosi:\n{res.stderr}")
+        sys.exit(1)
+
+    print(f"[Zafira] Muvaffaqiyatli kompilyatsiya qilindi: {exe_name}")
+
+
 def main():
     args = sys.argv[1:]
 
     if not args:
         print(BANNER)
         print("Foydalanish:")
-        print("  python zafira.py run <fayl.zf>     — Faylni bajar")
-        print("  python zafira.py repl               — Interaktiv rejim")
-        print("  python zafira.py tokens <fayl.zf>  — Tokenlarni ko'rsat")
-        print("  python zafira.py ast <fayl.zf>     — AST ni ko'rsat")
+        print("  python zafira.py run <fayl.zf>        — Faylni bajar")
+        print("  python zafira.py transpile <fayl.zf>  — C kodiga aylantir (.c)")
+        print("  python zafira.py compile <fayl.zf>    — Binar dasturga kompilyatsiya qil (.exe)")
+        print("  python zafira.py repl                 — Interaktiv rejim")
+        print("  python zafira.py tokens <fayl.zf>     — Tokenlarni ko'rsat")
+        print("  python zafira.py ast <fayl.zf>        — AST ni ko'rsat")
         return
 
     command = args[0]
@@ -163,6 +225,18 @@ def main():
             print("[Zafira] Fayl nomi ko'rsatilmagan: python zafira.py run <fayl.zf>")
             sys.exit(1)
         run_file(args[1])
+
+    elif command == 'transpile':
+        if len(args) < 2:
+            print("[Zafira] Fayl nomi ko'rsatilmagan: python zafira.py transpile <fayl.zf>")
+            sys.exit(1)
+        transpile_file(args[1])
+
+    elif command == 'compile':
+        if len(args) < 2:
+            print("[Zafira] Fayl nomi ko'rsatilmagan: python zafira.py compile <fayl.zf>")
+            sys.exit(1)
+        compile_file(args[1])
 
     elif command == 'repl':
         repl()
@@ -187,3 +261,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

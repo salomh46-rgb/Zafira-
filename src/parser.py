@@ -516,4 +516,36 @@ class Parser:
             self._expect(TokenType.RBRACKET)
             return ListLiteral(elements=elements)
 
+        if t.type == TokenType.FN:
+            return self._parse_anonymous_function()
+
         raise ParseError(f"Kutilmagan token: '{t.value}' ({t.type.name})", t)
+
+    def _parse_anonymous_function(self) -> FunctionDef:
+        self._expect(TokenType.FN)
+        name = ""
+        if self._match(TokenType.IDENT):
+            name = self._advance().value
+        self._expect(TokenType.LPAREN)
+        params = []
+        while not self._match(TokenType.RPAREN, TokenType.EOF):
+            pname = self._expect(TokenType.IDENT).value
+            ptype = None
+            if self._match(TokenType.COLON):
+                self._advance()
+                ptype = self._expect(TokenType.IDENT).value
+            params.append((pname, ptype))
+            if self._match(TokenType.COMMA):
+                self._advance()
+        self._expect(TokenType.RPAREN)
+        return_type = None
+        if self._match(TokenType.ARROW):
+            self._advance()
+            return_type = self._expect(TokenType.IDENT).value
+        where_clause = None
+        if self._match(TokenType.WHERE):
+            self._advance()
+            where_clause = self._parse_expr()
+        body = self._parse_block()
+        return FunctionDef(name=name, params=params, return_type=return_type,
+                           body=body, mode='draft', where_clause=where_clause)

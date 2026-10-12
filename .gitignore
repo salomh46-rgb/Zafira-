@@ -25,10 +25,12 @@ Thumbs.db
 .coverage
 htmlcov/
 
-# Build
+# Build & Compiled artifacts
 dist/
 build/
 *.egg-info/
+*.exe
+examples/*.c
 
 # Maxfiy
 .env
