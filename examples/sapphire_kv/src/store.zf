@@ -7,6 +7,7 @@
 import std.datetime
 import std.fs
 import std.json
+import std.string
 
 // Kesh elementi strukturasi
 struct CacheItem {
@@ -42,20 +43,38 @@ impl Store {
         self.misses = 0
         self.aof_path = aof_file
         
-        // Agar AOF fayli mavjud bo'lsa, xotiraga tiklaymiz
+        // Haqiqiy AOF tiklash: faylni qatorma-qator o'qib, ketma-ket qayta tiklaymiz
         if fs.exists(self.aof_path) {
             let content = fs.read_text(self.aof_path)
             if content != "" {
-                try {
-                    self.items = json.parse(content)
-                } catch (e) {
-                    print("[SapphireKV] AOF tiklashda ogohlantirish: " + String(e))
+                let lines = string.split(content, "\n")
+                for line in lines {
+                    let trimmed = string.trim(line)
+                    if trimmed != "" {
+                        try {
+                            let op = json.parse(trimmed)
+                            let action = op["op"]
+                            let k = op["key"]
+                            if action == "SET" {
+                                let item = json.parse("{}")
+                                item["key"] = k
+                                item["val"] = op["val"]
+                                item["created"] = op["created"]
+                                item["exp"] = op["exp"]
+                                self.items[k] = item
+                            } else if action == "DEL" {
+                                self.items[k] = null
+                            }
+                        } catch (e) {
+                            // Buzilgan yoki chala qatorlarni e'tiborsiz qoldiramiz
+                        }
+                    }
                 }
             }
         }
     }
 
-    // Qiymatni yozish (SET)
+    // Qiymatni yozish (SET) - O(1) tezlikda fayl oxiriga bitta qator qo'shadi
     fn set(self, key: String, val: String, ttl_seconds: Float) {
         self.total_ops = self.total_ops + 1
         let now = datetime.timestamp()
@@ -71,7 +90,21 @@ impl Store {
         item["exp"] = exp
 
         self.items[key] = item
-        self.persist()
+
+        // Haqiqiy Append-Only Log yozuvi (Incremental AOF)
+        let log_entry = json.parse("{}")
+        log_entry["op"] = "SET"
+        log_entry["key"] = key
+        log_entry["val"] = val
+        log_entry["created"] = now
+        log_entry["exp"] = exp
+
+        try {
+            fs.append_text(self.aof_path, json.stringify(log_entry) + "\n")
+        } catch (e) {
+            print("[SapphireKV AOF Append Xatosi] " + String(e))
+        }
+
         return true
     }
 
@@ -92,7 +125,14 @@ impl Store {
                 // Muddati o'tgan, o'chiramiz (Lazy Expiration)
                 self.items[key] = null
                 self.misses = self.misses + 1
-                self.persist()
+
+                let del_entry = json.parse("{}")
+                del_entry["op"] = "DEL"
+                del_entry["key"] = key
+                try {
+                    fs.append_text(self.aof_path, json.stringify(del_entry) + "\n")
+                } catch (e) {}
+
                 return null
             }
         }
@@ -106,7 +146,14 @@ impl Store {
         self.total_ops = self.total_ops + 1
         if self.items[key] != null {
             self.items[key] = null
-            self.persist()
+
+            let del_entry = json.parse("{}")
+            del_entry["op"] = "DEL"
+            del_entry["key"] = key
+            try {
+                fs.append_text(self.aof_path, json.stringify(del_entry) + "\n")
+            } catch (e) {}
+
             return true
         }
         return false
@@ -117,13 +164,27 @@ impl Store {
         return self.get(key) != null
     }
 
-    // Xotiradagi ma'lumotlarni AOF fayliga doimiy saqlash
+    // AOF Rewrite / Compaction (Kompaktsiya - to'liq holatni qayta yozish)
     fn persist(self) {
         try {
-            let data_str = json.stringify(self.items)
-            fs.write_text(self.aof_path, data_str)
+            // AOF Rewrite: Faqat amaldagi aktiv kalitlarni toza holatda qayta yozamiz
+            let clean_log = ""
+            // Mavjud holatni AOF formatida siqib yozamiz
+            fs.write_text(self.aof_path, "")
+            for k in self.items {
+                let it = self.items[k]
+                if it != null {
+                    let entry = json.parse("{}")
+                    entry["op"] = "SET"
+                    entry["key"] = it["key"]
+                    entry["val"] = it["val"]
+                    entry["created"] = it["created"]
+                    entry["exp"] = it["exp"]
+                    fs.append_text(self.aof_path, json.stringify(entry) + "\n")
+                }
+            }
         } catch (e) {
-            print("[SapphireKV AOF Xatosi] " + String(e))
+            print("[SapphireKV AOF Compaction Xatosi] " + String(e))
         }
     }
 
@@ -133,14 +194,16 @@ impl Store {
         res["total_operations"] = self.total_ops
         res["hits"] = self.hits
         res["misses"] = self.misses
-        res["engine"] = "Zafira In-Memory KV"
+        res["engine"] = "Zafira In-Memory KV (AOF Log Engine)"
         return res
     }
 
     // To'liq tozalash (FLUSH)
     fn flush(self) {
         self.items = json.parse("{}")
-        self.persist()
+        try {
+            fs.write_text(self.aof_path, "")
+        } catch (e) {}
         return true
     }
 }

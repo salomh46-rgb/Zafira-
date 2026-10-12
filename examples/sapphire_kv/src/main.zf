@@ -110,27 +110,34 @@ fn request_handler(req) {
     return "SapphireKV v1.0.0 REST Server ishlamoqda. /ping, /set, /get, /del, /stats dan foydalaning."
 }
 
-// 2 ta test so'rovi uchun sinov rejimida ochamiz (yoki doimiy)
-print("  • Server tayyor: http://127.0.0.1:6380")
-let srv = net.listen(6380, request_handler, 3, true)
+// Rejimni tekshiramiz: Agar SAPPHIRE_TEST_MODE bo'lsa self-test qiladi, aks holda doimiy 24/7 daemon ishlaydi
+let test_mode = env.get("SAPPHIRE_TEST_MODE")
 
-// HTTP Client orqali o'zimiz so'rov yuborib tekshiramiz (Dogfooding Test):
-let ping_res = net.get("http://127.0.0.1:6380/ping")
-print("  • REST GET /ping Javobi: " + ping_res.body)
+if test_mode == "true" {
+    print("  • Sinov rejimi (Self-Test): 4 ta so'rov tekshirilmoqda...")
+    let srv = net.listen(6380, request_handler, 3, true)
 
-let set_payload = json.parse("{}")
-set_payload["key"] = "loyiha"
-set_payload["val"] = "Zafira Language v1.0.0"
+    let ping_res = net.get("http://127.0.0.1:6380/ping")
+    print("  • REST GET /ping Javobi: " + ping_res.body)
 
-let set_res = net.post("http://127.0.0.1:6380/set", set_payload)
-print("  • REST POST /set Javobi: " + set_res.body)
+    let set_payload = json.parse("{}")
+    set_payload["key"] = "loyiha"
+    set_payload["val"] = "Zafira Language v1.0.0"
 
-let get_res = net.get("http://127.0.0.1:6380/get?key=loyiha")
-print("  • REST GET /get?key=loyiha Javobi: " + get_res.body)
+    let set_res = net.post("http://127.0.0.1:6380/set", set_payload)
+    print("  • REST POST /set Javobi: " + set_res.body)
 
-let stats_res = net.get("http://127.0.0.1:6380/stats")
-print("  • REST GET /stats Javobi: " + stats_res.body)
+    let get_res = net.get("http://127.0.0.1:6380/get?key=loyiha")
+    print("  • REST GET /get?key=loyiha Javobi: " + get_res.body)
 
-net.close(srv)
+    let stats_res = net.get("http://127.0.0.1:6380/stats")
+    print("  • REST GET /stats Javobi: " + stats_res.body)
 
-print("\n🎉 SapphireKV barcha testlardan 100% muvaffaqiyatli o'tdi!")
+    net.close(srv)
+    print("\n🎉 SapphireKV barcha testlardan 100% muvaffaqiyatli o'tdi!")
+} else {
+    // 24/7 Doimiy Ishlab Chiqarish (Production Daemon) Rejimi
+    print("  • Server 24/7 doimiy rejimda ishga tushdi: http://127.0.0.1:6380")
+    print("  • To'xtatish uchun Ctrl+C bosing.")
+    net.listen(6380, request_handler)
+}

@@ -89,6 +89,9 @@ class ZafiraStruct:
         self.type_name = type_name
         self.fields = fields
 
+    def __iter__(self):
+        return iter(self.fields)
+
     def __repr__(self):
         flds = ', '.join(f"{k}: {v!r}" for k, v in self.fields.items())
         return f"{self.type_name}{{ {flds} }}"
