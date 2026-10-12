@@ -32,7 +32,7 @@ from src.transpiler import Transpiler
 from src.package_manager import init_project, run_project, test_project, build_project
 
 
-ZAFIRA_VERSION = "0.5.0-alpha"
+ZAFIRA_VERSION = "0.6.0-alpha"
 
 BANNER = f"""
 ╔══════════════════════════════════════════════╗
@@ -68,10 +68,11 @@ def execute_source(source: str, filename: str = '<stdin>', raise_exceptions: boo
         parser = Parser(tokens)
         program = parser.parse()
 
+        curr_file = filename if (filename and filename != '<stdin>') else None
         # 2.5. Type Checking (faqat seal funksiyalar)
         from src.type_checker import TypeChecker, TypeCheckError
         try:
-            checker = TypeChecker()
+            checker = TypeChecker(current_file=curr_file)
             checker.check(program)
         except TypeCheckError as e:
             if raise_exceptions:
@@ -80,7 +81,7 @@ def execute_source(source: str, filename: str = '<stdin>', raise_exceptions: boo
             sys.exit(1)
 
         # 3. Interpretation
-        interpreter = Interpreter()
+        interpreter = Interpreter(current_file=curr_file)
         return interpreter.run(program)
 
     except LexerError as e:

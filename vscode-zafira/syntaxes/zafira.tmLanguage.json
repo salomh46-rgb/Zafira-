@@ -150,7 +150,7 @@
       "patterns": [
         {
           "name": "keyword.control.zafira",
-          "match": "\\b(let|const|fn|seal|draft|where|run|struct|import|return|if|else|while|for|in|and|or|not)\\b"
+          "match": "\\b(let|const|fn|seal|draft|where|run|struct|import|return|if|else|while|for|in|and|or|not|try|catch|throw|finally)\\b"
         }
       ]
     },

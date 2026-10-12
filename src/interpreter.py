@@ -3,6 +3,7 @@ Zafira Language - Interpreter (Draft Mode)
 AST daraxtini bevosita bajaradi.
 """
 
+import os
 import concurrent.futures
 import asyncio
 import time
@@ -12,7 +13,8 @@ from src.parser import (
     Identifier, BinaryOp, UnaryOp, FunctionCall, MemberAccess, IndexAccess,
     ListLiteral, RangeExpr, LetStatement, ConstStatement, AssignStatement,
     ReturnStatement, IfStatement, WhileStatement, ForStatement, FunctionDef,
-    StructDef, ImportStatement, RunBlock, ExprStatement, AwaitExpr
+    StructDef, ImportStatement, RunBlock, ExprStatement, AwaitExpr,
+    TryStatement, ThrowStatement
 )
 
 
@@ -23,6 +25,18 @@ class ZafiraReturn(Exception):
 
 class ZafiraError(Exception):
     pass
+
+
+class ZafiraUserError(ZafiraError):
+    def __init__(self, value: Any):
+        self.value = value
+        super().__init__(str(value))
+
+    def __str__(self):
+        try:
+            return _zf_str(self.value)
+        except Exception:
+            return str(self.value)
 
 
 class ZafiraTask:
@@ -219,7 +233,13 @@ BUILTINS = {
 # ─── INTERPRETER ───
 
 class Interpreter:
-    def __init__(self):
+    def __init__(self, current_file: Optional[str] = None):
+        self.current_file = os.path.abspath(current_file) if current_file else None
+        self._file_stack: List[str] = []
+        self._module_cache: Dict[str, ZafiraStruct] = {}
+        self.builtin_env = Environment()
+        for name, fn in BUILTINS.items():
+            self.builtin_env.set(name, fn)
         self.global_env = Environment()
         for name, fn in BUILTINS.items():
             self.global_env.set(name, fn)
@@ -238,8 +258,15 @@ class Interpreter:
         except:
             pass
 
-    def run(self, program: Program):
-        return self._exec_block(program.body, self.global_env)
+    def run(self, program: Program, current_file: Optional[str] = None):
+        file_to_push = current_file or self.current_file
+        if file_to_push:
+            self._file_stack.append(os.path.abspath(file_to_push))
+        try:
+            return self._exec_block(program.body, self.global_env)
+        finally:
+            if file_to_push:
+                self._file_stack.pop()
 
     def _exec_block(self, stmts: List[Node], env: Environment) -> Any:
         result = None
@@ -414,6 +441,41 @@ class Interpreter:
                 raise
         return result
 
+    def _exec_TryStatement(self, node: TryStatement, env: Environment) -> Any:
+        result = None
+        try:
+            try:
+                child_env = Environment(parent=env)
+                result = self._exec_block(node.try_block, child_env)
+            except (ZafiraUserError, ZafiraError) as err:
+                if node.catch_block is not None:
+                    catch_env = Environment(parent=env)
+                    if node.catch_param:
+                        err_val = err.value if isinstance(err, ZafiraUserError) else str(err)
+                        catch_env.set(node.catch_param, err_val)
+                    result = self._exec_block(node.catch_block, catch_env)
+                else:
+                    raise
+            except ZafiraReturn:
+                raise
+            except Exception as e:
+                if node.catch_block is not None:
+                    catch_env = Environment(parent=env)
+                    if node.catch_param:
+                        catch_env.set(node.catch_param, str(e))
+                    result = self._exec_block(node.catch_block, catch_env)
+                else:
+                    raise ZafiraError(str(e))
+        finally:
+            if node.finally_block is not None:
+                finally_env = Environment(parent=env)
+                self._exec_block(node.finally_block, finally_env)
+        return result
+
+    def _exec_ThrowStatement(self, node: ThrowStatement, env: Environment):
+        value = self._exec(node.expr, env)
+        raise ZafiraUserError(value)
+
     def _exec_FunctionDef(self, node, env):
         fn = ZafiraFunction(node=node, env=env, interpreter=self)
         if node.name:
@@ -436,16 +498,115 @@ class Interpreter:
         env.set(node.name, constructor)
         return None
 
+    def _is_local_module_path(self, path: str) -> bool:
+        return (
+            path.startswith(('./', '../', '.\\', '..\\'))
+            or path.endswith('.zf')
+            or '/' in path
+            or '\\' in path
+            or not path.startswith(('py.', 'std.', 'sys.'))
+        )
+
+    def _resolve_module_path(self, import_path: str) -> str:
+        if self._file_stack:
+            base_dir = os.path.dirname(os.path.abspath(self._file_stack[-1]))
+        elif self.current_file:
+            base_dir = os.path.dirname(os.path.abspath(self.current_file))
+        else:
+            base_dir = os.getcwd()
+
+        # 1. base_dir ga nisbatan qidirish
+        candidate = os.path.normpath(os.path.join(base_dir, import_path))
+        if os.path.isfile(candidate):
+            return os.path.abspath(candidate)
+        if not candidate.endswith('.zf'):
+            candidate_zf = candidate + '.zf'
+            if os.path.isfile(candidate_zf):
+                return os.path.abspath(candidate_zf)
+
+        # 2. CWD ga nisbatan qidirish (fallback)
+        cwd_candidate = os.path.normpath(os.path.join(os.getcwd(), import_path))
+        if os.path.isfile(cwd_candidate):
+            return os.path.abspath(cwd_candidate)
+        if not cwd_candidate.endswith('.zf'):
+            cwd_candidate_zf = cwd_candidate + '.zf'
+            if os.path.isfile(cwd_candidate_zf):
+                return os.path.abspath(cwd_candidate_zf)
+
+        raise ZafiraError(f"Modul fayli topilmadi: '{import_path}' (Qidirildi: {candidate})")
+
+    def _import_local_module(self, node, env):
+        resolved_path = self._resolve_module_path(node.path)
+
+        base_name = os.path.basename(resolved_path)
+        if base_name.endswith('.zf'):
+            module_name = base_name[:-3]
+        else:
+            module_name = os.path.splitext(base_name)[0]
+
+        bind_name = getattr(node, 'alias', None) or module_name
+
+        # 1. Keshda bormi? (Siklik import va takroriy importdan himoya)
+        if resolved_path in self._module_cache:
+            mod_struct = self._module_cache[resolved_path]
+            env.set(bind_name, mod_struct)
+            return mod_struct
+
+        # 2. Yangi ZafiraStruct yaratib, siklik importdan himoyalanish uchun darhol keshga joylashtiramiz
+        mod_struct = ZafiraStruct(type_name=module_name, fields={})
+        self._module_cache[resolved_path] = mod_struct
+
+        # 3. Faylni o'qish va parse qilish
+        try:
+            with open(resolved_path, 'r', encoding='utf-8') as f:
+                source = f.read()
+        except Exception as e:
+            raise ZafiraError(f"Modul faylini o'qib bo'lmadi '{resolved_path}': {e}")
+
+        from src.lexer import Lexer
+        from src.parser import Parser
+
+        sub_lexer = Lexer(source)
+        sub_tokens = sub_lexer.tokenize()
+        sub_parser = Parser(sub_tokens)
+        sub_program = sub_parser.parse()
+
+        # 4. Yangi ajratilgan Environment yaratiladi
+        mod_env = Environment(parent=self.builtin_env)
+
+        # 5. Modul kodini shu muhitda bajaramiz
+        self._file_stack.append(resolved_path)
+        try:
+            self._exec_block(sub_program.body, mod_env)
+        finally:
+            self._file_stack.pop()
+
+        # 6. Modul ichidagi barcha o'zgaruvchi, funksiya va structlarni mod_struct.fields ga ko'chiramiz
+        mod_struct.fields.update(mod_env._vars)
+
+        # 7. Joriy chaqiruvchi muhitga modul nomi bilan joylashtiramiz
+        env.set(bind_name, mod_struct)
+        return mod_struct
+
     def _exec_ImportStatement(self, node, env):
         if node.path.startswith('py.'):
             from src.python_interop import PythonInterop
             PythonInterop.import_module(node.path, env)
+            if getattr(node, 'alias', None):
+                root_name = node.path[3:].split('.')[0]
+                env.set(node.alias, env.get(root_name))
         elif node.path.startswith('std.'):
             from src.stdlib import load_stdlib_module
-            load_stdlib_module(node.path, env)
+            load_stdlib_module(node.path, env, alias=getattr(node, 'alias', None))
         elif node.path == 'sys.io':
-            env.set('print', _builtin_print)
-            env.set('input', _builtin_input)
+            if getattr(node, 'alias', None):
+                sys_struct = ZafiraStruct('sys.io', {'print': _builtin_print, 'input': _builtin_input})
+                env.set(node.alias, sys_struct)
+            else:
+                env.set('print', _builtin_print)
+                env.set('input', _builtin_input)
+        elif self._is_local_module_path(node.path):
+            self._import_local_module(node, env)
         else:
             print(f"[Zafira] '{node.path}' moduli hozircha qo'llab-quvvatlanmaydi")
         return None

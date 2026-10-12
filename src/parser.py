@@ -135,12 +135,24 @@ class StructDef(Node):
 
 @dataclass
 class ImportStatement(Node):
-    path: str                  # 'sys.ai' | 'py.torch'
+    path: str                  # 'sys.ai' | 'py.torch' | './matematika.zf'
+    alias: Optional[str] = None # 'mat'
 
 @dataclass
 class RunBlock(Node):
     target: str                # '@gpu' | '@npu' | '@auto'
     body: List[Node]
+
+@dataclass
+class TryStatement(Node):
+    try_block: List[Node]
+    catch_param: Optional[str] = None
+    catch_block: Optional[List[Node]] = None
+    finally_block: Optional[List[Node]] = None
+
+@dataclass
+class ThrowStatement(Node):
+    expr: Node
 
 @dataclass
 class ExprStatement(Node):
@@ -218,6 +230,10 @@ class Parser:
             return self._parse_while()
         if t.type == TokenType.FOR:
             return self._parse_for()
+        if t.type == TokenType.TRY:
+            return self._parse_try()
+        if t.type == TokenType.THROW:
+            return self._parse_throw()
         if t.type == TokenType.IMPORT:
             return self._parse_import()
         if t.type == TokenType.RUN:
@@ -291,13 +307,62 @@ class Parser:
         body = self._parse_block()
         return ForStatement(var=var, iterable=iterable, body=body)
 
+    def _parse_try(self) -> TryStatement:
+        self._advance()  # try
+        try_block = self._parse_block()
+        catch_param = None
+        catch_block = None
+        finally_block = None
+
+        self._skip_newlines()
+        if self._match(TokenType.CATCH):
+            self._advance()  # catch
+            if self._match(TokenType.LPAREN):
+                self._advance()
+                catch_param = self._expect(TokenType.IDENT).value
+                self._expect(TokenType.RPAREN)
+            catch_block = self._parse_block()
+
+        self._skip_newlines()
+        if self._match(TokenType.FINALLY):
+            self._advance()  # finally
+            finally_block = self._parse_block()
+
+        if catch_block is None and finally_block is None:
+            raise ParseError("'try' bloki uchun kamida 'catch' yoki 'finally' bo'lishi shart", self._current())
+
+        return TryStatement(
+            try_block=try_block,
+            catch_param=catch_param,
+            catch_block=catch_block,
+            finally_block=finally_block
+        )
+
+    def _parse_throw(self) -> ThrowStatement:
+        self._advance()  # throw
+        expr = self._parse_expr()
+        return ThrowStatement(expr=expr)
+
     def _parse_import(self) -> ImportStatement:
         self._advance()  # import
-        path = self._expect(TokenType.IDENT).value
-        while self._match(TokenType.DOT):
-            self._advance()
-            path += '.' + self._expect(TokenType.IDENT).value
-        return ImportStatement(path=path)
+        if self._match(TokenType.STRING):
+            path = self._advance().value
+        elif self._match(TokenType.DOT, TokenType.SLASH):
+            path = ''
+            while self._current().type in (TokenType.DOT, TokenType.SLASH, TokenType.IDENT):
+                path += self._advance().value
+        else:
+            path = self._expect(TokenType.IDENT).value
+            while self._match(TokenType.DOT):
+                self._advance()
+                path += '.' + self._expect(TokenType.IDENT).value
+
+        alias = None
+        if self._match(TokenType.AS):
+            self._advance()  # as
+            alias = self._expect(TokenType.IDENT).value
+
+        return ImportStatement(path=path, alias=alias)
 
     def _parse_run(self) -> RunBlock:
         self._advance()  # run

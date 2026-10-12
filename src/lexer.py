@@ -31,6 +31,7 @@ class TokenType(Enum):
     IN         = auto()   # for i IN range
     STRUCT     = auto()   # struct Odam { ... }
     IMPORT     = auto()   # import sys.ai
+    AS         = auto()   # as
     TRUE       = auto()
     FALSE      = auto()
     NULL_KW    = auto()
@@ -43,6 +44,10 @@ class TokenType(Enum):
     AT         = auto()   # @gpu, @npu, @auto
     ASYNC      = auto()   # async fn ...
     AWAIT      = auto()   # await ...
+    TRY        = auto()   # try { ... }
+    CATCH      = auto()   # catch (e) { ... }
+    THROW      = auto()   # throw expr
+    FINALLY    = auto()   # finally { ... }
 
     # === OPERATORLAR ===
     PLUS       = auto()   # +
@@ -94,6 +99,7 @@ KEYWORDS = {
     'in': TokenType.IN,
     'struct': TokenType.STRUCT,
     'import': TokenType.IMPORT,
+    'as': TokenType.AS,
     'true': TokenType.TRUE,
     'false': TokenType.FALSE,
     'null': TokenType.NULL_KW,
@@ -106,6 +112,10 @@ KEYWORDS = {
     'and': TokenType.AND,
     'or': TokenType.OR,
     'not': TokenType.NOT,
+    'try': TokenType.TRY,
+    'catch': TokenType.CATCH,
+    'throw': TokenType.THROW,
+    'finally': TokenType.FINALLY,
 }
 
 

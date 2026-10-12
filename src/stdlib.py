@@ -375,6 +375,15 @@ def _get_net_module() -> ZafiraModule:
 NET_MODULE = _get_net_module()
 
 
+# ─── 8. STD.FS ───
+
+def _get_fs_module() -> ZafiraModule:
+    from src.std_fs import create_fs_module
+    return create_fs_module()
+
+FS_MODULE = _get_fs_module()
+
+
 # ─── STDLIB MODULES RO'YXATI ───
 
 STDLIB_MODULES: Dict[str, ZafiraModule] = {
@@ -385,11 +394,12 @@ STDLIB_MODULES: Dict[str, ZafiraModule] = {
     'ai': AI_MODULE,
     'json': JSON_MODULE,
     'net': NET_MODULE,
+    'fs': FS_MODULE,
 }
 
 
 
-def load_stdlib_module(path: str, env) -> None:
+def load_stdlib_module(path: str, env, alias: Optional[str] = None) -> None:
     parts = path.split('.')
     if len(parts) < 2:
         raise ZafiraError(f"Noto'g'ri modul yo'li: '{path}'")
@@ -397,4 +407,5 @@ def load_stdlib_module(path: str, env) -> None:
     module = STDLIB_MODULES.get(module_name)
     if module is None:
         raise ZafiraError(f"'{path}' moduli topilmadi")
-    env.set(module_name, module)
+    target_name = alias if alias else module_name
+    env.set(target_name, module)

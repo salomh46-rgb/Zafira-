@@ -1,0 +1,60 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  ZAFIRA TILI - Fayllar Tizimi (std.fs) Namunasi
+//  Fayl: fs_test.zf
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import std.fs
+
+print("=== 1. STD.FS FAYL AMALLARI SINOVI ===")
+
+let test_fayl = "namuna_fayl.txt"
+
+// 1.1 Fayl yaratish va matn yozish
+print("1. Faylga matn yozish...")
+fs.write_text(test_fayl, "Salom, Zafira dasturlash tili!\n")
+print("   Yozildi. Mavjudmi: " + String(fs.exists(test_fayl)))
+
+// 1.2 Fayl oxiriga yangi satr qo'shish (append)
+print("2. Faylga qo'shimcha matn qo'shish...")
+fs.append_text(test_fayl, "Ushbu satr fs.append_text orqali qo'shildi.\n")
+
+// 1.3 Fayl matnini qayta o'qish
+print("3. Fayl tarkibini o'qish:")
+let matn = fs.read_text(test_fayl)
+print(matn)
+
+// 1.4 Fayl o'lchami va xususiyatlari
+let hajm = fs.file_size(test_fayl)
+print("Fayl hajmi: " + String(hajm) + " bayt")
+print("is_file: " + String(fs.is_file(test_fayl)))
+print("is_dir: " + String(fs.is_dir(test_fayl)))
+
+// 1.5 Fayldan nusxa olish
+let nusxa_fayl = "namuna_nusxa.txt"
+print("4. Fayldan nusxa olish: " + nusxa_fayl)
+fs.copy(test_fayl, nusxa_fayl)
+print("   Nusxa mavjudmi: " + String(fs.exists(nusxa_fayl)))
+
+// 1.6 Papka yaratish va list_dir sinovi
+let test_papka = "namuna_papka"
+print("5. Papka yaratish: " + test_papka)
+fs.make_dir(test_papka, true)
+print("   Papka is_dir: " + String(fs.is_dir(test_papka)))
+
+let ichki_fayl = test_papka + "/ichki.txt"
+fs.write_text(ichki_fayl, "Ichki fayl ma'lumoti")
+let papka_fayllari = fs.list_dir(test_papka)
+print("   Papka ichidagi elementlar soni: " + String(papka_fayllari.len))
+
+// 1.7 Tozalash (o'chirish)
+print("6. Yaratilgan fayl va papkalarni tozalash...")
+fs.remove(test_fayl)
+fs.remove(nusxa_fayl)
+fs.remove(ichki_fayl)
+fs.remove_dir(test_papka, false)
+
+print("   Asl fayl mavjudmi: " + String(fs.exists(test_fayl)))
+print("   Nusxa fayl mavjudmi: " + String(fs.exists(nusxa_fayl)))
+print("   Papka mavjudmi: " + String(fs.exists(test_papka)))
+
+print("\n=== STD.FS SINOVLARI MUVAFFAQIYATLI YAKUNLANDI! ===")

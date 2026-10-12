@@ -1,0 +1,3 @@
+import "./matematika.zf" as mat
+print("5 kvadrati: " + String(mat.kvadrat(5)))
+print("3 kubi: " + String(mat.kub(3)))

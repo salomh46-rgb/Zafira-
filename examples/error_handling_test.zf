@@ -1,0 +1,63 @@
+// ==========================================
+// Zafira Dasturlash Tili - Xatoliklarni Boshqarish
+// try / catch / throw / finally mexanizmi namoyishi
+// ==========================================
+
+print("=== 1. Oddiy throw va catch sinovi ===")
+try {
+    print("Try bloki boshlandi")
+    throw "Maxsus foydalanuvchi xatoligi yuz berdi!"
+    print("Bu qator bajarilmasligi kerak")
+} catch (xato) {
+    print("Ushlandi: " + xato)
+} finally {
+    print("Finally bloki: Doim bajariladi")
+}
+
+print("\n=== 2. Tizimli xatolik (nolga bo'lish) sinovi ===")
+try {
+    let a = 100
+    let b = 0
+    print("Bo'lish amali bajarilmoqda...")
+    let natija = a / b
+    print("Natija: " + natija)
+} catch (tizim_xatosi) {
+    print("Tizim xatosi ushlandi: " + tizim_xatosi)
+} finally {
+    print("Finally: Resurslar tozalandi")
+}
+
+print("\n=== 3. Parametrsiz catch sinovi ===")
+try {
+    throw "Xatolik haqida batafsil ma'lumot kerak emas"
+} catch {
+    print("Umumiy xatolik ushlandi (parametrsiz catch)!")
+}
+
+print("\n=== 4. Faqat finally bloki (xatosiz holat) ===")
+try {
+    print("Amal muvaffaqiyatli bajarildi")
+} finally {
+    print("Finally bloki muvaffaqiyatli holatda ham ishladi")
+}
+
+print("\n=== 5. Funksiya ichida xato tashlash va qaytarish ===")
+fn xavfli_bolish(x, y) {
+    if y == 0 {
+        throw "Maxraj nol bo'lishi mumkin emas!"
+    }
+    return x / y
+}
+
+try {
+    let hisob1 = xavfli_bolish(20, 4)
+    print("20 / 4 = " + hisob1)
+    let hisob2 = xavfli_bolish(20, 0)
+    print("20 / 0 = " + hisob2)
+} catch (e) {
+    print("Funksiya xatosi ushlandi: " + e)
+} finally {
+    print("Hisoblash jarayoni yakunlandi")
+}
+
+print("\n=== Barcha xatoliklarni boshqarish sinovlari muvaffaqiyatli yakunlandi! ===")

@@ -1,0 +1,2 @@
+fn kvadrat(x) { return x * x }
+fn kub(x) { return x * x * x }

@@ -16,13 +16,15 @@ Qoidalari:
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Set, Tuple
 import difflib
+import os
 
 from src.parser import (
     Program, Node, NumberLiteral, StringLiteral, BoolLiteral, NullLiteral,
     Identifier, BinaryOp, UnaryOp, FunctionCall, MemberAccess, IndexAccess,
     ListLiteral, RangeExpr, LetStatement, ConstStatement, AssignStatement,
     ReturnStatement, IfStatement, WhileStatement, ForStatement, FunctionDef,
-    StructDef, ImportStatement, RunBlock, ExprStatement, Block, AwaitExpr
+    StructDef, ImportStatement, RunBlock, ExprStatement, Block, AwaitExpr,
+    TryStatement, ThrowStatement
 )
 
 
@@ -67,6 +69,8 @@ def node_to_str(node: Node) -> str:
         return f"{node.op} {node_to_str(node.operand)}"
     if isinstance(node, AwaitExpr):
         return f"await {node_to_str(node.expr)}"
+    if isinstance(node, ThrowStatement):
+        return f"throw {node_to_str(node.expr)}"
     return str(type(node).__name__)
 
 
@@ -231,7 +235,8 @@ def create_root_env() -> TypeEnvironment:
 class TypeChecker:
     """AST daraxtini aylanib chiquvchi Zafira Statik Type Checker."""
 
-    def __init__(self):
+    def __init__(self, current_file: Optional[str] = None):
+        self.current_file = current_file
         self.root_env = create_root_env()
 
     def check(self, program: Program):
@@ -468,11 +473,17 @@ class TypeChecker:
         elif node.path.startswith('std.'):
             parts = node.path.split('.')
             if len(parts) >= 2:
-                env.declare(parts[1], type_name='Any', is_const=True)
+                mod_name = parts[1]
+                from src.stdlib import STDLIB_MODULES
+                if mod_name not in STDLIB_MODULES:
+                    raise TypeCheckError(f"'{node.path}' moduli topilmadi!")
+                target_name = getattr(node, 'alias', None) or mod_name
+                env.declare(target_name, type_name='Any', is_const=True)
         elif node.path.startswith('py.'):
             mod_path = node.path[3:]
             root_name = mod_path.split('.')[0]
-            env.declare(root_name, type_name='Any', is_const=True)
+            target_name = getattr(node, 'alias', None) or root_name
+            env.declare(target_name, type_name='Any', is_const=True)
             if '.' in mod_path:
                 leaf_name = mod_path.split('.')[-1]
                 if leaf_name != root_name:
@@ -485,6 +496,39 @@ class TypeChecker:
                 env.declare('plt', type_name='Any', is_const=True)
             elif root_name == 'tensorflow':
                 env.declare('tf', type_name='Any', is_const=True)
+        else:
+            # Lokal modul importi (./matematika.zf, ../modul, matematika.zf)
+            alias = getattr(node, 'alias', None)
+            if alias:
+                target_name = alias
+            else:
+                base_name = os.path.basename(node.path)
+                if base_name.endswith('.zf'):
+                    base_name = base_name[:-3]
+                target_name = os.path.splitext(base_name)[0]
+            env.declare(target_name, type_name='Any', is_const=True)
+
+            # Agar fayl mavjud bo'lsa, undagi structlarni ham ro'yxatdan o'tkazamiz
+            base_dir = os.path.dirname(os.path.abspath(self.current_file)) if self.current_file else os.getcwd()
+            candidate = os.path.normpath(os.path.join(base_dir, node.path))
+            target_file = None
+            if os.path.isfile(candidate):
+                target_file = candidate
+            elif not candidate.endswith('.zf') and os.path.isfile(candidate + '.zf'):
+                target_file = candidate + '.zf'
+
+            if target_file:
+                try:
+                    with open(target_file, 'r', encoding='utf-8') as f:
+                        sub_src = f.read()
+                    from src.lexer import Lexer
+                    from src.parser import Parser
+                    sub_prog = Parser(Lexer(sub_src).tokenize()).parse()
+                    for s in sub_prog.body:
+                        if isinstance(s, StructDef):
+                            env.declare_struct(s.name, s.fields)
+                except Exception:
+                    pass
 
     def _check_RunBlock(self, node: RunBlock, env: TypeEnvironment,
                         current_fn: Optional[FunctionDef] = None,
@@ -502,6 +546,30 @@ class TypeChecker:
         child_env = TypeEnvironment(parent=env)
         for s in node.statements:
             self._check_stmt(s, child_env, current_fn=current_fn, returns_found=returns_found)
+
+    def _check_TryStatement(self, node: TryStatement, env: TypeEnvironment,
+                            current_fn: Optional[FunctionDef] = None,
+                            returns_found: Optional[List[str]] = None, **kwargs):
+        child_try = TypeEnvironment(parent=env)
+        for s in node.try_block:
+            self._check_stmt(s, child_try, current_fn=current_fn, returns_found=returns_found)
+
+        if node.catch_block is not None:
+            child_catch = TypeEnvironment(parent=env)
+            if node.catch_param:
+                child_catch.declare(node.catch_param, type_name='Any', is_const=False)
+            for s in node.catch_block:
+                self._check_stmt(s, child_catch, current_fn=current_fn, returns_found=returns_found)
+
+        if node.finally_block is not None:
+            child_finally = TypeEnvironment(parent=env)
+            for s in node.finally_block:
+                self._check_stmt(s, child_finally, current_fn=current_fn, returns_found=returns_found)
+
+    def _check_ThrowStatement(self, node: ThrowStatement, env: TypeEnvironment,
+                             current_fn: Optional[FunctionDef] = None,
+                             returns_found: Optional[List[str]] = None, **kwargs):
+        self._check_expr(node.expr, env)
 
     # ─── EXPRESSION TEKSHIRUVLARI (TIP DEDUCTION) ───
 
@@ -702,6 +770,18 @@ class TypeChecker:
                 if callee.member in ('pop',): return 'Any'
             if obj_type == 'String':
                 if callee.member in ('upper', 'lower', 'trim'): return 'String'
+            if isinstance(callee.obj, Identifier) and callee.obj.name == 'fs':
+                if callee.member in ('read_text',):
+                    return 'String'
+                if callee.member in ('exists', 'is_file', 'is_dir'):
+                    return 'Bool'
+                if callee.member in ('list_dir',):
+                    return 'List'
+                if callee.member in ('file_size',):
+                    return 'Int'
+                if callee.member in ('write_text', 'append_text', 'make_dir', 'remove', 'remove_dir', 'copy'):
+                    return 'Null'
+                raise TypeCheckError(f"std.fs modulida '{callee.member}' funksiyasi mavjud emas!")
             return 'Any'
 
         else:
@@ -711,6 +791,14 @@ class TypeChecker:
 
     def _infer_MemberAccess(self, node: MemberAccess, env: TypeEnvironment) -> str:
         obj_type = self._check_expr(node.obj, env)
+        if isinstance(node.obj, Identifier) and node.obj.name == 'fs':
+            if node.member in (
+                'read_text', 'write_text', 'append_text', 'exists',
+                'is_file', 'is_dir', 'list_dir', 'make_dir',
+                'remove', 'remove_dir', 'file_size', 'copy'
+            ):
+                return 'Fn'
+            raise TypeCheckError(f"std.fs modulida '{node.member}' a'zosi mavjud emas!")
         if obj_type == 'List':
             if node.member == 'len': return 'Int'
             if node.member in ('first', 'last'): return 'Any'
