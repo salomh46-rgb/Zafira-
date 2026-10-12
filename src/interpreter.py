@@ -914,9 +914,7 @@ class Interpreter:
         obj = self._exec(node.obj, env)
         raw_idx = self._exec(node.index, env)
         if isinstance(obj, ZafiraStruct) and isinstance(raw_idx, str):
-            if raw_idx in obj.fields:
-                return obj.fields[raw_idx]
-            raise ZafiraError(f"'{obj.type_name}' da '{raw_idx}' maydoni yo'q")
+            return obj.fields.get(raw_idx, None)
         idx = int(raw_idx)
         if isinstance(obj, ZafiraList):
             try:

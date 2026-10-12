@@ -102,7 +102,10 @@ def _net_post(url: Any, data: Optional[Any] = None, json: Optional[Any] = None, 
         data = None
 
     if json is not None:
-        body_bytes = _json_stringify(json).encode('utf-8')
+        if isinstance(json, (ZafiraStruct, ZafiraList, dict, list)):
+            body_bytes = _json_stringify(json).encode('utf-8')
+        else:
+            body_bytes = str(json).encode('utf-8')
         if 'Content-Type' not in req_headers and 'content-type' not in req_headers:
             req_headers['Content-Type'] = 'application/json; charset=utf-8'
     elif data is not None:
@@ -165,7 +168,12 @@ class _ZafiraRequestHandler(http.server.BaseHTTPRequestHandler):
 
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
-        query = parsed_url.query
+        raw_query = parsed_url.query
+        
+        # Query stringni struktura / lug'atga aylantiramiz
+        parsed_qs = urllib.parse.parse_qs(raw_query)
+        query_dict = {k: v[0] if len(v) == 1 else v for k, v in parsed_qs.items()}
+        query_struct = ZafiraStruct('QueryParams', query_dict)
 
         headers_dict = dict(self.headers.items())
         headers_struct = ZafiraStruct('HttpHeaders', headers_dict)
@@ -173,7 +181,8 @@ class _ZafiraRequestHandler(http.server.BaseHTTPRequestHandler):
         req_struct = ZafiraStruct('HttpRequest', {
             'method': method,
             'path': path,
-            'query': query,
+            'query': query_struct,
+            'raw_query': raw_query,
             'body': body_str,
             'headers': headers_struct
         })
