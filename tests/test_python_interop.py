@@ -42,6 +42,10 @@ class TestPythonInterop(unittest.TestCase):
         self.assertTrue(1 <= num <= 100)
 
     def test_import_numpy_and_alias(self):
+        try:
+            import numpy
+        except ImportError:
+            self.skipTest("numpy o'rnatilmagan (ixtiyoriy)")
         env = Environment()
         ok = PythonInterop.import_module('py.numpy', env)
         self.assertTrue(ok)

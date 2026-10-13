@@ -34,13 +34,20 @@ jobs:
           PYTHONUTF8: '1'
           PYTHONIOENCODING: 'utf-8'
         run: |
-          python -m unittest discover tests
+          python -m unittest discover -v tests
 
       - name: Verify Flagship SapphireKV Tests
+        env:
+          PYTHONUTF8: '1'
+          PYTHONIOENCODING: 'utf-8'
+          SAPPHIRE_TEST_MODE: 'true'
         run: |
           python zafira.py run examples/sapphire_kv/tests/test_store.zf
           python zafira.py run examples/sapphire_kv/tests/test_main.zf
 
       - name: Verify v1.0.0 Grand Showcase
+        env:
+          PYTHONUTF8: '1'
+          PYTHONIOENCODING: 'utf-8'
         run: |
           python zafira.py run examples/v1_showcase.zf
