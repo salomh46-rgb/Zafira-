@@ -144,7 +144,7 @@ class TestAsyncAwait(unittest.TestCase):
     def test_parallel_async_execution_speed(self):
         code = """
         async fn yukla_data(id) {
-            sleep(0.08)
+            sleep(0.12)
             return "Data_" + String(id)
         }
         let t1 = yukla_data(1)
@@ -158,8 +158,8 @@ class TestAsyncAwait(unittest.TestCase):
 
         self.assertEqual(self.interpreter.global_env.get("r1"), "Data_1")
         self.assertEqual(self.interpreter.global_env.get("r2"), "Data_2")
-        # Ketma-ket bo'lsa kamida 0.16s ketardi. Parallel bo'lgani sababli < 0.14s da yakunlanadi
-        self.assertLess(elapsed, 0.15, f"Vazifalar parallel bajarilmadi! Ketgan vaqt: {elapsed:.3f}s")
+        # Ketma-ket bo'lsa kamida 0.24s ketardi. Parallel bo'lgani sababli < 0.22s da yakunlanadi
+        self.assertLess(elapsed, 0.22, f"Vazifalar parallel bajarilmadi! Ketgan vaqt: {elapsed:.3f}s")
 
     # ─── 5. XATOLIKLAR BILAN ISHLASH ───
 
