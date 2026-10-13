@@ -34,7 +34,20 @@ jobs:
           PYTHONUTF8: '1'
           PYTHONIOENCODING: 'utf-8'
         run: |
-          python -m unittest discover -v tests
+          python -c "
+          import unittest, sys
+          loader = unittest.TestLoader()
+          suite = loader.discover('tests')
+          runner = unittest.TextTestRunner(verbosity=1)
+          result = runner.run(suite)
+          if not result.wasSuccessful():
+              print('\n' + '='*50 + '\nFAILED TESTS DETAILS:\n' + '='*50)
+              for f in result.failures:
+                  print(f[0], '\n', f[1])
+              for e in result.errors:
+                  print(e[0], '\n', e[1])
+              sys.exit(1)
+          "
 
       - name: Verify Flagship SapphireKV Tests
         env:
