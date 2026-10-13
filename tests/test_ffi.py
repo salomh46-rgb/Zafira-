@@ -319,7 +319,7 @@ class TestZafiraFfiEndToEnd(unittest.TestCase):
         self.run_code(code)
         env = self.interpreter.global_env
         self.assertEqual(env.get('uzunlik'), 11)
-        self.assertEqual(env.get('puts_ret'), 0)
+        self.assertGreaterEqual(env.get('puts_ret'), 0)
 
     def test_zafira_ffi_c_types_usage(self):
         code = """

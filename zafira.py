@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 import subprocess
 import shutil
+from typing import Optional, List, Dict, Any, Tuple
 
 from src.lexer import Lexer, LexerError
 from src.parser import Parser, ParseError
